@@ -28,3 +28,33 @@ CREATE TABLE vendors (
         ON DELETE CASCADE
         ON UPDATE CASCADE
 );
+CREATE TABLE membership_plans (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    company_id INT,
+    name VARCHAR(100),
+    duration VARCHAR(100),
+    price DECIMAL(10,2),
+    FOREIGN KEY (company_id) REFERENCES companies(id)
+);
+CREATE TABLE members (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    company_id INT,
+    full_name VARCHAR(255),
+    phone VARCHAR(20),
+    email VARCHAR(255),
+    gender ENUM('male','female','other'),
+    age VARCHAR(10),
+    address TEXT,
+    join_date DATE,
+    status ENUM('active','inactive') DEFAULT 'active',
+    FOREIGN KEY (company_id) REFERENCES companies(id)
+);
+CREATE TABLE member_schedules (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    company_id INT,
+    member_id INT,
+    start_time TIME,
+    end_time TIME,
+    FOREIGN KEY (company_id) REFERENCES companies(id),
+    FOREIGN KEY (member_id) REFERENCES members(id)
+);
