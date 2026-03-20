@@ -13,3 +13,5 @@ existing repo
 git remote add origin https://github.com/Vision2518/Gym-management.git
 git branch -M main
 git push -u origin main
+ALTER TABLE table_name 
+ADD column_name data_type [constraints];

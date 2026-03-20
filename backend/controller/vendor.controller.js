@@ -65,8 +65,27 @@ export const loginVendor = async (req, res) => {
 };
 export const addMemberPlan=async(req,res)=>{
   try {
-    
+    const {id,name,duration,price} =req.body;
+console.log(req.body);
+    if(!id ||!name||!duration||!price){
+      return res.status(400).json({
+        message:"All feild are required"
+      })
+    }
+    const [existingPlan]=await db.query(
+      "SELECT * FROM membership_plans WHERE name=?",[name],
+    )
+    await db.query(
+      "INSERT INTO membership_plans (id,name, duration, price) VALUES (?,?, ?, ?)",[id,name,duration,price]
+    );
+    res.status(201).json({
+      message:"plan added sucessfully"
+    })
   } catch (error) {
-    
+    console.log("membership add error",error);
+    res.status(500).json({
+      message:"server error",
+      error:error.message,
+    });
   }
-}
+};
