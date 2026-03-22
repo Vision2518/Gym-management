@@ -65,18 +65,24 @@ export const loginVendor = async (req, res) => {
 };
 export const addMemberPlan=async(req,res)=>{
   try {
-    const {id,name,duration,price} =req.body;
+    const {id,company_id,name,duration,price} =req.body;
 console.log(req.body);
-    if(!id ||!name||!duration||!price){
+    if(!id ||!company_id||!name||!duration||!price){
       return res.status(400).json({
         message:"All feild are required"
       })
     }
     const [existingPlan]=await db.query(
-      "SELECT * FROM membership_plans WHERE name=?",[name],
+      "SELECT * FROM membership_plans WHERE name=?",[name]
     )
+    if(existingPlan.length>0)
+    {
+      return res.status(403).json({
+        message:"Plan exists"
+      })
+    }
     await db.query(
-      "INSERT INTO membership_plans (id,name, duration, price) VALUES (?,?, ?, ?)",[id,name,duration,price]
+      "INSERT INTO membership_plans (id,company_id,name, duration, price) VALUES (?,?,?,?,?)",[id,company_id,name,duration,price]
     );
     res.status(201).json({
       message:"plan added sucessfully"
@@ -86,6 +92,90 @@ console.log(req.body);
     res.status(500).json({
       message:"server error",
       error:error.message,
+    });
+  }
+};
+export const getAllPlan = async (req, res) => {
+  try {
+    const [rows] = await db.execute(`
+      SELECT 
+        m.id,
+        m.company_id,
+        c.name AS company_name,
+        m.name AS plan_name,
+        m.duration,
+        m.price
+      FROM membership_plans m
+      JOIN companies c ON m.company_id = c.id
+    `);
+
+    console.log("JOIN RESULT:", rows);
+
+    res.status(200).json({
+      success: true,
+      count: rows.length,
+      plans: rows
+    });
+
+  } catch (error) {
+    console.error("GetAllPlan Error:", error);
+    res.status(500).json({
+      success: false,
+      message: "server error",
+      error: error.message
+    });
+  }
+};
+export const getPlanByCompany = async (req, res) => {
+  try {
+    const { company_id, company_name } = req.query;
+
+    if (!company_id && !company_name) {
+      return res.status(400).json({
+        success: false,
+        message: "Provide company_id or company_name"
+      });
+    }
+
+    let query = `
+      SELECT 
+        m.id,
+        m.company_id,
+        c.name AS company_name,
+        m.name AS plan_name,
+        m.duration,
+        m.price
+      FROM membership_plans m
+      JOIN companies c ON m.company_id = c.id
+      WHERE 1=1
+    `;
+
+    let values = [];
+
+    if (company_id) {
+      query += " AND m.company_id = ?";
+      values.push(company_id);
+    }
+
+    if (company_name) {
+      query += " AND c.name = ?";
+      values.push(company_name);
+    }
+
+    const [rows] = await db.query(query, values);
+
+    res.status(200).json({
+      success: true,
+      count: rows.length,
+      plans: rows
+    });
+
+  } catch (error) {
+    console.log("Get plan by company error:", error);
+    res.status(500).json({
+      success: false,
+      message: "server error",
+      error: error.message
     });
   }
 };
