@@ -33,13 +33,13 @@ export const loginAdmin = async (req, res) => {
     const token = jwt.sign(
       { id: admin.id, email: admin.email, role: "super_admin" },
       process.env.JWT_SECRET,
-      { expiresIn: process.env.JWT_EXPIRES_IN },
+      { expiresIn: "7d" },
     );
     console.log("JWT_SECRET:", process.env.JWT_SECRET);
     console.log("JWT_EXPIRES_IN:", process.env.JWT_EXPIRES_IN);
     res.cookie("token", token, {
       httpOnly: true,
-      secure: "none",
+      secure: false,
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
@@ -101,23 +101,30 @@ export const addVendor = async (req, res) => {
     });
   }
 };
-export const getVendor = async (req, res) => {
+export const getAllVendor = async (req, res) => {
   try {
-    const { email } = req.params; //passing email to the url to get vendor by email
-    const [rows] = await db.execute(
-      "SELECT id,company_id,username,email,number,package_type FROM vendors WHERE email = ?",
-      [email],
-    );
-    if (rows.length === 0) {
-      return res.status(404).json({ message: "Vendor not found" });
+    const [vendor] = await db.execute("SELECT * FROM vendors");
+    if (vendor.length === 0) {
+      return res.status(404).json({ message: "no vendors available" });
     }
-    const vendor = rows[0];
-    res.status(200).json({
-      message: "Vendor fetched successfully",
-      vendor,
-    });
+    return res.status(200).json({ vendor: vendor[0] });
   } catch (error) {
-    res.status(500).json({ message: "Server error", error });
+    console.log("fetching error", error);
+  }
+};
+export const deleteVendor = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const [rows] = await db.execute("SELECT * FROM WHERE vendors id=?", [id]);
+    if (rows.length === 0) {
+      return res.status(404).json({ message: "vendor not found" });
+    }
+    await db.execute("DELETE FROM vendors WHERE id=?", [id]);
+    res.status(200).json({ message: "vendor deleted sucessfully" });
+  } catch (error) {
+    res
+      .status(500)
+      .json({ message: "Failed to delete vendor", error: error.message });
   }
 };
 export const addCompany = async (req, res) => {
@@ -146,12 +153,10 @@ export const addCompany = async (req, res) => {
       .json({ message: "Failed to add company", error: error.message });
   }
 };
-export const getCompanyForAdmin = async (req, res) => {
+export const getAllCompany = async (req, res) => {
   try {
     const { id } = req.params;
-    const [rows] = await db.execute("SELECT * FROM companies WHERE id = ?", [
-      id,
-    ]);
+    const [rows] = await db.execute("SELECT * FROM companies ");
     if (rows.length === 0) {
       return res.status(404).json({ message: "Company not found" });
     }

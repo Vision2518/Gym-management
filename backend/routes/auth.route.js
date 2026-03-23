@@ -3,44 +3,44 @@ import {
   loginAdmin,
   signout,
   addVendor,
-  getVendor,
   addCompany,
-  getCompanyForAdmin,
   deleteCompany,
+  getAllVendor,
+  getAllCompany,
 } from "../controller/auth.controlller.js";
 import { isSuperAdmin } from "../middlewares/isLogin.js";
-import { authorizesRoles } from "../middlewares/isAuth.js";
+import authorizeRoles from "../middlewares/isAuth.js";
 const authRouter = express.Router();
 authRouter.post("/login", loginAdmin);
 authRouter.post("/signout", signout);
 authRouter.post(
   "/addvendor",
   isSuperAdmin,
-  authorizesRoles("super_admin"),
+  authorizeRoles("super_admin"),
   addVendor,
 );
 authRouter.post(
   "/addcompany",
   isSuperAdmin,
-  authorizesRoles("super_admin"),
+  authorizeRoles("super_admin"),
   addCompany,
 );
 authRouter.get(
-  "/getcompany/id/:id",
+  "/getcompany",
   isSuperAdmin,
-  authorizesRoles("super_admin"),
-  getCompanyForAdmin,
+  authorizeRoles("super_admin"),
+  getAllCompany,
 );
 authRouter.get(
-  "/getvendor/email/:email",
+  "/getvendor",
   isSuperAdmin,
-  authorizesRoles("super_admin"),
-  getVendor,
+  authorizeRoles("super_admin"),
+  getAllVendor,
 );
 authRouter.delete(
   "/deletecompany/id/:id",
   isSuperAdmin,
-  authorizesRoles("super_admin"),
+  authorizeRoles("super_admin"),
   deleteCompany,
 );
 export default authRouter;

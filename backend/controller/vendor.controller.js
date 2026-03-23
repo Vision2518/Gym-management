@@ -19,7 +19,7 @@ export const loginVendor = async (req, res) => {
        WHERE v.email = ?`,
       [email],
     );
-    
+
     if (rows.length === 0) {
       return res.status(404).json({ message: "Vendor not found" });
     }
@@ -63,35 +63,36 @@ export const loginVendor = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
-export const addMemberPlan=async(req,res)=>{
+export const addMemberPlan = async (req, res) => {
   try {
-    const {id,company_id,name,duration,price} =req.body;
-console.log(req.body);
-    if(!id ||!company_id||!name||!duration||!price){
+    const { id, company_id, name, duration, price } = req.body;
+    console.log(req.body);
+    if (!id || !company_id || !name || !duration || !price) {
       return res.status(400).json({
-        message:"All feild are required"
-      })
+        message: "All feild are required",
+      });
     }
-    const [existingPlan]=await db.query(
-      "SELECT * FROM membership_plans WHERE name=?",[name]
-    )
-    if(existingPlan.length>0)
-    {
+    const [existingPlan] = await db.query(
+      "SELECT * FROM membership_plans WHERE name=?",
+      [name],
+    );
+    if (existingPlan.length > 0) {
       return res.status(403).json({
-        message:"Plan exists"
-      })
+        message: "Plan exists",
+      });
     }
     await db.query(
-      "INSERT INTO membership_plans (id,company_id,name, duration, price) VALUES (?,?,?,?,?)",[id,company_id,name,duration,price]
+      "INSERT INTO membership_plans (id,company_id,name, duration, price) VALUES (?,?,?,?,?)",
+      [id, company_id, name, duration, price],
     );
     res.status(201).json({
-      message:"plan added sucessfully"
-    })
+      message: "plan added sucessfully",
+    });
   } catch (error) {
-    console.log("membership add error",error);
+    console.log("membership add error", error);
     res.status(500).json({
-      message:"server error",
-      error:error.message,
+      message: "server error",
+      error: error.message,
     });
   }
 };
@@ -114,15 +115,14 @@ export const getAllPlan = async (req, res) => {
     res.status(200).json({
       success: true,
       count: rows.length,
-      plans: rows
+      plans: rows,
     });
-
   } catch (error) {
     console.error("GetAllPlan Error:", error);
     res.status(500).json({
       success: false,
       message: "server error",
-      error: error.message
+      error: error.message,
     });
   }
 };
@@ -133,7 +133,7 @@ export const getPlanByCompany = async (req, res) => {
     if (!company_id && !company_name) {
       return res.status(400).json({
         success: false,
-        message: "Provide company_id or company_name"
+        message: "Provide company_id or company_name",
       });
     }
 
@@ -167,15 +167,15 @@ export const getPlanByCompany = async (req, res) => {
     res.status(200).json({
       success: true,
       count: rows.length,
-      plans: rows
+      plans: rows,
     });
-
   } catch (error) {
     console.log("Get plan by company error:", error);
     res.status(500).json({
       success: false,
       message: "server error",
-      error: error.message
+      error: error.message,
     });
   }
 };
+

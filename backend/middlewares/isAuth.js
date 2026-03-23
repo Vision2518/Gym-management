@@ -1,22 +1,22 @@
-export const authorizesRoles = (...roles) =>{
-    return(req, res, next) =>{
-        const {role} = req.admin;
-        if(!roles.includes(role))
-        return res.status(403).json({message:"Unauthorize access"});
-        next();
-    };
-};
-
-export const authorizeVendor = (...roles) => {
+const authorizeRoles = (...roles) => {
   return (req, res, next) => {
-    const { role } = req.vendor;
+    const user = req.admin || req.vendor || req.member;
+
+    if (!user) {
+      return res.status(401).json({
+        message: "User not authenticated",
+      });
+    }
+
+    const { role } = user;
 
     if (!roles.includes(role)) {
       return res.status(403).json({
-        message: "Unauthorized",
+        message: "Unauthorized access",
       });
     }
 
     next();
   };
 };
+export default authorizeRoles;

@@ -34,7 +34,9 @@ CREATE TABLE membership_plans (
     name VARCHAR(100),
     duration VARCHAR(100),
     price DECIMAL(10,2),
-    FOREIGN KEY (company_id) REFERENCES companies(id)
+   FOREIGN KEY (company_id) REFERENCES companies(id)
+ON DELETE CASCADE
+ON UPDATE CASCADE;
 );
 CREATE TABLE members (
     id INT AUTO_INCREMENT PRIMARY KEY,
