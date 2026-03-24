@@ -38,13 +38,13 @@ memberRouter.get(
   getAllMemberSchedules,
 );
 memberRouter.get(
-  "/getschedulebycompany",
+  "/getschedulebycompany/",
   isVendor,
   authorizeRoles("vendor"),
   getSchedulesByCompany,
 );
 memberRouter.get(
-  "/getschedulebymember",
+  "/getschedulebymember/:member_id",
   isVendor,
   authorizeRoles("vendor"),
   getSchedulesByMember,

@@ -32,7 +32,12 @@ export const loginVendor = async (req, res) => {
     }
     // 3. Generate token
     const token = jwt.sign(
-      { id: vendor.id, email: vendor.email, role: "vendor" },
+      {
+        id: vendor.id,
+        email: vendor.email,
+        role: "vendor",
+        company_id: vendor.company_id,
+      },
       process.env.JWT_SECRET,
       { expiresIn: process.env.JWT_EXPIRES_IN },
     );
@@ -178,4 +183,3 @@ export const getPlanByCompany = async (req, res) => {
     });
   }
 };
-

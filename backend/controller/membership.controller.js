@@ -15,10 +15,11 @@ export const addMember = async (req, res) => {
     } = req.body;
 
     // simple validation
-    if (!company_id ||!plan_id|| !full_name || !phone || !join_date) {
+    if (!company_id || !plan_id || !full_name || !phone || !join_date) {
       return res.status(400).json({
         success: false,
-        message: "company_id,plan_id,full_name, phone and join_date are required",
+        message:
+          "company_id,plan_id,full_name, phone and join_date are required",
       });
     }
 
@@ -78,7 +79,7 @@ export const getMemberById = async (req, res) => {
       FROM members m
       LEFT JOIN membership_plans mp ON m.plan_id = mp.id
       WHERE m.id = ?`,
-      [id]
+      [id],
     );
 
     if (member.length === 0) {
@@ -198,10 +199,26 @@ export const getSchedulesByMember = async (req, res) => {
 };
 export const getSchedulesByCompany = async (req, res) => {
   try {
-    const { company_id } = req.params;
+    const company_id = req.vendor?.company_id;
+
+    if (!company_id) {
+      return res.status(400).json({
+        success: false,
+        message: "company_id not found in authenticated vendor token",
+      });
+    }
 
     const [schedules] = await db.query(
-      "SELECT * FROM member_schedules WHERE company_id = ?",
+      `SELECT 
+        ms.id,
+        ms.company_id,
+        ms.member_id,
+        m.full_name,
+        ms.start_time,
+        ms.end_time
+      FROM member_schedules ms
+      JOIN members m ON ms.member_id = m.id
+      WHERE ms.company_id = ?`,
       [company_id],
     );
 
