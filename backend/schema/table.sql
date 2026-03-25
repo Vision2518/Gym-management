@@ -50,6 +50,9 @@ CREATE TABLE members (
     join_date DATE,
     status ENUM('active','inactive') DEFAULT 'active',
     FOREIGN KEY (company_id) REFERENCES companies(id)
+    ALTER TABLE members ADD COLUMN schedule_id INT;
+ALTER TABLE members ADD CONSTRAINT fk_members_schedule
+FOREIGN KEY (schedule_id) REFERENCES member_schedules(id);
 );
 CREATE TABLE member_schedules (
     id INT AUTO_INCREMENT PRIMARY KEY,

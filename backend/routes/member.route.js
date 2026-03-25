@@ -5,11 +5,11 @@ import authorizeRoles from "../middlewares/isAuth.js";
 import {
   addMember,
   addMemberSchedule,
+  deleteMember,
   getAllMemberSchedules,
   getMemberById,
   getMembersByCompany,
   getSchedulesByCompany,
-  getSchedulesByMember,
 } from "../controller/membership.controller.js";
 export const memberRouter = express.Router();
 memberRouter.post("/add-member", isVendor, authorizeRoles("vendor"), addMember);
@@ -25,6 +25,13 @@ memberRouter.get(
   authorizeRoles("vendor"),
   getMembersByCompany,
 );
+memberRouter.delete(
+  "/deletemember/:id",
+  isVendor,
+  authorizeRoles("vendor"),
+  deleteMember,
+);
+
 memberRouter.post(
   "/addschedule",
   isVendor,
@@ -43,9 +50,10 @@ memberRouter.get(
   authorizeRoles("vendor"),
   getSchedulesByCompany,
 );
-memberRouter.get(
+/*memberRouter.get(
   "/getschedulebymember/:member_id",
   isVendor,
   authorizeRoles("vendor"),
   getSchedulesByMember,
 );
+*/

@@ -4,6 +4,7 @@ export const addMember = async (req, res) => {
     const {
       company_id,
       plan_id,
+      schedule_id,
       full_name,
       phone,
       email,
@@ -15,23 +16,37 @@ export const addMember = async (req, res) => {
     } = req.body;
 
     // simple validation
-    if (!company_id || !plan_id || !full_name || !phone || !join_date) {
+    if (
+      !company_id ||
+      !schedule_id ||
+      !plan_id ||
+      !full_name ||
+      !phone ||
+      !join_date
+    ) {
       return res.status(400).json({
         success: false,
         message:
-          "company_id,plan_id,full_name, phone and join_date are required",
+          "company_id,plan_id,schedule_id,full_name, phone and join_date are required",
       });
     }
-
+    const [existingMember] = await db.query(
+      "SELECT * FROM members WHERE email = ? AND phone = ?",
+      [email, phone],
+    );
+    if (existingMember.length > 0) {
+      return res.status(200).json({ message: "member exists" });
+    }
     const query = `
       INSERT INTO members
-      (company_id,plan_id,full_name, phone, email, gender, age, address, join_date, status)
-      VALUES (?, ?,?,?, ?, ?, ?, ?, ?, ?)
+      (company_id,plan_id,schedule_id,full_name, phone, email, gender, age, address, join_date, status)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?)
     `;
 
     const [result] = await db.query(query, [
       company_id,
       plan_id,
+      schedule_id,
       full_name,
       phone,
       email || null,
@@ -104,7 +119,16 @@ export const getMemberById = async (req, res) => {
 };
 export const getMembersByCompany = async (req, res) => {
   try {
-    const { company_id } = req.params;
+    const company_id = req.vendor?.company_id;
+
+    if (!company_id) {
+      return res
+        .status(400)
+        .json({
+          success: false,
+          message: "company_id not found in authenticated vendor token",
+        });
+    }
 
     const [members] = await db.query(
       "SELECT * FROM members WHERE company_id = ?",
@@ -125,11 +149,122 @@ export const getMembersByCompany = async (req, res) => {
     });
   }
 };
+export const deleteMember = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const [rows] = await db.execute("SELECT *FROM members WHERE id=?", [id]);
+    if (rows.length === 0) {
+      return res.status(404).json({ message: "member not exist" });
+    }
+    await db.execute("DELETE FROM members WHERE id=?", [id]);
+    res.status(200).json({ message: "member deleted!" });
+  } catch (error) {
+    res.status(500).json({ message: "failed to delete", error: error.message });
+  }
+};
+export const updateMember = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const {
+      full_name,
+      company_id,
+      email,
+      phone,
+      gender,
+      age,
+      plan_id,
+      address,
+      status,
+      schedule_id
+    } = req.body;
+
+    // 1. Check existing member
+    const [existing] = await db.query(
+      "SELECT * FROM members WHERE id = ?",
+      [id]
+    );
+
+    if (existing.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: `Member not found with id ${id}`,
+      });
+    }
+
+    const oldMember = existing[0];
+
+    // 2. Keep old values if new ones not provided
+    const updatedFullName = full_name || oldMember.full_name;
+    const updatedCompanyId=company_id || oldMember.company_id;
+    const updatedEmail = email || oldMember.email;
+    const updatedPhone = phone || oldMember.phone;
+    const updatedAddress = address || oldMember.address;
+    const updatedGender = gender || oldMember.gender;
+    const updatedAge = age || oldMember.age;
+    const updatedPlanId = plan_id || oldMember.plan_id;
+    const updatedStatus = status || oldMember.status;
+    const updatedSchedule_Id= status||oldMember.schedule_id;
+
+    // 3. Optional: Check if plan exists if plan_id changed
+    if (plan_id && plan_id !== oldMember.plan_id) {
+      const [plan] = await db.query(
+        "SELECT * FROM membership_plans WHERE id = ?",
+        [plan_id]
+      );
+
+      if (plan.length === 0) {
+        return res.status(404).json({
+          success: false,
+          message: `Membership plan not found with id ${plan_id}`,
+        });
+      }
+    }
+
+    // 4. Update member
+    await db.query(
+      `UPDATE members 
+       SET full_name = ?,company_id=?, email = ?, phone = ?, address = ?, gender = ?, age = ?, plan_id = ?, status = ?,schedule_id
+       WHERE id = ?`,
+      [
+        updatedFullName,
+       updatedCompanyId,
+        updatedEmail,
+        updatedPhone,
+        updatedAddress,
+        updatedGender,
+        updatedAge,
+        updatedPlanId,
+        updatedStatus,
+        updatedSchedule_Id,
+        id,
+      ]
+    );
+
+    // 5. Fetch updated member
+    const [updatedMember] = await db.query(
+      "SELECT * FROM members WHERE id = ?",
+      [id]
+    );
+
+    res.status(200).json({
+      success: true,
+      message: "Member updated successfully",
+      member: updatedMember[0],
+    });
+  } catch (error) {
+    console.error("Update Member Error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to update member",
+      error: error.message,
+    });
+  }
+};
 export const addMemberSchedule = async (req, res) => {
   try {
-    const { company_id, member_id, start_time, end_time } = req.body;
+    const { company_id, start_time, end_time } = req.body;
 
-    if (!company_id || !member_id || !start_time || !end_time) {
+    if (!company_id || !start_time || !end_time) {
       return res.status(400).json({
         success: false,
         message: "company_id, member_id, start_time and end_time are required",
@@ -137,9 +272,9 @@ export const addMemberSchedule = async (req, res) => {
     }
 
     const [result] = await db.query(
-      `INSERT INTO member_schedules (company_id, member_id, start_time, end_time)
-       VALUES (?, ?, ?, ?)`,
-      [company_id, member_id, start_time, end_time],
+      `INSERT INTO member_schedules (company_id, start_time, end_time)
+       VALUES (?,?, ?)`,
+      [company_id, start_time, end_time],
     );
 
     res.status(201).json({
@@ -174,7 +309,72 @@ export const getAllMemberSchedules = async (req, res) => {
     });
   }
 };
-export const getSchedulesByMember = async (req, res) => {
+export const deleteSchedule = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const [rows] = await db.execute(
+      "SELECT * FROM member_schedules WHERE id=?",
+      [id],
+    );
+    if (rows.length === 0) {
+      return res.status(404).json({ message: "schedule does not exist" });
+    }
+    await db.execute("DELETE FROM member_schedules WHERE id=?", [id]);
+    return res.status(200).json({ message: "schedule deleted successfully" });
+  } catch (error) {
+    return res
+      .status(500)
+      .json({ message: "failed to delete schedule", error: error.message });
+  }
+};
+export const updateMemberSchedule = async (req, res) => {
+  try {
+    const { id } = req.params; // schedule id from URL
+    const { company_id, start_time, end_time } = req.body;
+
+    if (!company_id || !start_time || !end_time) {
+      return res.status(400).json({
+        success: false,
+        message: "company_id, start_time and end_time are required",
+      });
+    }
+
+    // Check if schedule exists
+    const [existing] = await db.query(
+      "SELECT * FROM member_schedules WHERE id = ?",
+      [id]
+    );
+
+    if (existing.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Member schedule not found",
+      });
+    }
+
+    // Update schedule
+    await db.query(
+      `UPDATE member_schedules 
+       SET company_id = ?, start_time = ?, end_time = ?
+       WHERE id = ?`,
+      [company_id, start_time, end_time, id]
+    );
+
+    res.status(200).json({
+      success: true,
+      message: "Member schedule updated successfully",
+    });
+  } catch (error) {
+    console.error("Update Member Schedule Error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to update member schedule",
+      error: error.message,
+    });
+  }
+};
+
+/*export const getSchedulesByMember = async (req, res) => {
   try {
     const { member_id } = req.params;
 
@@ -196,7 +396,7 @@ export const getSchedulesByMember = async (req, res) => {
       error: error.message,
     });
   }
-};
+};*/
 export const getSchedulesByCompany = async (req, res) => {
   try {
     const company_id = req.vendor?.company_id;

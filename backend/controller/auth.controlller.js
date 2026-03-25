@@ -51,7 +51,6 @@ export const loginAdmin = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
-
 export const signout = async (req, res) => {
   try {
     res.clearCookie("token");
@@ -107,15 +106,16 @@ export const getAllVendor = async (req, res) => {
     if (vendor.length === 0) {
       return res.status(404).json({ message: "no vendors available" });
     }
-    return res.status(200).json({ vendor: vendor[0] });
+    return res.status(200).json({ vendors:vendor});
   } catch (error) {
     console.log("fetching error", error);
   }
 };
+
 export const deleteVendor = async (req, res) => {
   try {
     const { id } = req.params;
-    const [rows] = await db.execute("SELECT * FROM WHERE vendors id=?", [id]);
+    const [rows] = await db.execute("SELECT * FROM vendors WHERE id=?", [id]);
     if (rows.length === 0) {
       return res.status(404).json({ message: "vendor not found" });
     }
@@ -125,6 +125,82 @@ export const deleteVendor = async (req, res) => {
     res
       .status(500)
       .json({ message: "Failed to delete vendor", error: error.message });
+  }
+};
+export const updateVendor = async (req, res) => {
+  try {
+    const { id } = req.params; // vendor id from URL
+    const { company_id, username, email, password, number } = req.body;
+
+    if (!company_id || !username || !email) {
+      return res.status(400).json({
+        message: "company_id, username and email are required",
+      });
+    }
+
+    // Check if vendor exists
+    const [existingVendor] = await db.query(
+      "SELECT * FROM vendors WHERE id = ?",
+      [id]
+    );
+
+    if (existingVendor.length === 0) {
+      return res.status(404).json({
+        message: "Vendor not found",
+      });
+    }
+
+    // Check if username already exists for another vendor
+    const [usernameExists] = await db.query(
+      "SELECT * FROM vendors WHERE username = ? AND id != ?",
+      [username, id]
+    );
+
+    if (usernameExists.length > 0) {
+      return res.status(400).json({
+        message: "Vendor username already exists",
+      });
+    }
+
+    // Check if email already exists for another vendor
+    const [emailExists] = await db.query(
+      "SELECT * FROM vendors WHERE email = ? AND id != ?",
+      [email, id]
+    );
+
+    if (emailExists.length > 0) {
+      return res.status(400).json({
+        message: "Email already exists",
+      });
+    }
+
+    let updateQuery = `
+      UPDATE vendors 
+      SET company_id = ?, username = ?, email = ?, number = ?
+    `;
+    let queryParams = [company_id, username, email, number || null];
+
+    // If password is provided, update password too
+    if (password) {
+      const hashedPassword = await bcrypt.hash(password, 10);
+      updateQuery += `, password = ?`;
+      queryParams.push(hashedPassword);
+    }
+
+    updateQuery += ` WHERE id = ?`;
+    queryParams.push(id);
+
+    await db.query(updateQuery, queryParams);
+
+    res.status(200).json({
+      message: "Vendor updated successfully",
+    });
+  } catch (error) {
+    console.log("Update Vendor Error:", error);
+    res.status(500).json({
+      message: "Server error",
+      error: error.message,
+    });
   }
 };
 export const addCompany = async (req, res) => {
@@ -185,6 +261,63 @@ export const deleteCompany = async (req, res) => {
     res
       .status(500)
       .json({ message: "Failed to delete company", error: error.message });
+  }
+};
+export const updateCompany = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, email, number, address } = req.body;
+
+    // Check if company exists
+    const [existingCompany] = await db.execute(
+      "SELECT * FROM companies WHERE id = ?",
+      [id]
+    );
+
+    if (existingCompany.length === 0) {
+      return res.status(404).json({
+        message: "Company not found",
+      });
+    }
+
+    // Use old values if new values are not provided
+    const currentCompany = existingCompany[0];
+
+    const updatedName = name || currentCompany.name;
+    const updatedEmail = email || currentCompany.email;
+    const updatedNumber = number || currentCompany.number;
+    const updatedAddress = address || currentCompany.address;
+
+    // Check if email already exists for another company (only if email is changed)
+    if (email) {
+      const [existingEmail] = await db.execute(
+        "SELECT * FROM companies WHERE email = ? AND id != ?",
+        [email, id]
+      );
+
+      if (existingEmail.length > 0) {
+        return res.status(400).json({
+          message: "Email already exists",
+        });
+      }
+    }
+
+    // Update company
+    await db.execute(
+      `UPDATE companies 
+       SET name = ?, email = ?, number = ?, address = ?
+       WHERE id = ?`,
+      [updatedName, updatedEmail, updatedNumber, updatedAddress, id]
+    );
+
+    res.status(200).json({
+      message: "Company updated successfully",
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Failed to update company",
+      error: error.message,
+    });
   }
 };
 export const verifyToken = async (req, res) => {

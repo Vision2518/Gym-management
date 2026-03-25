@@ -183,3 +183,22 @@ export const getPlanByCompany = async (req, res) => {
     });
   }
 };
+export const deletePlan=async (req,res)=>{
+  try{
+    const {id}=req.params;
+    const [rows]=await db.execute("SELECT *FROM membership_plan WHERE id=?",[id]);
+    if(rows.length===0)
+    {
+      return res.status(404)
+      .json({message:"plan not found"});
+    }
+    await db.execute ("DELETE *FROM membership_plan WHERE id=?",[id]);
+    return res.status(200)
+    .json({message:"plan deleted sucessfully"});
+  }
+  catch(error)
+  {
+   return res.status(500)
+   .json({message:"failed to delete",error:error.message});
+  }
+}

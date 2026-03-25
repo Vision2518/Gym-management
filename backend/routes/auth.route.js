@@ -3,10 +3,13 @@ import {
   loginAdmin,
   signout,
   addVendor,
-  addCompany,
-  deleteCompany,
   getAllVendor,
+  deleteVendor,
+  updateVendor,
+  addCompany,
   getAllCompany,
+  deleteCompany,
+  updateCompany,
 } from "../controller/auth.controlller.js";
 import { isSuperAdmin } from "../middlewares/isLogin.js";
 import authorizeRoles from "../middlewares/isAuth.js";
@@ -19,6 +22,25 @@ authRouter.post(
   authorizeRoles("super_admin"),
   addVendor,
 );
+authRouter.get(
+  "/getvendor",
+  isSuperAdmin,
+  authorizeRoles("super_admin"),
+  getAllVendor,
+);
+authRouter.delete(
+  "/deletevendor/:id",
+  isSuperAdmin,
+  authorizeRoles("super_admin"),
+  deleteVendor,
+);
+authRouter.patch(
+  "/updatevendor/:id",
+  isSuperAdmin,
+  authorizeRoles("super_admin"),
+  updateVendor,
+);
+
 authRouter.post(
   "/addcompany",
   isSuperAdmin,
@@ -31,16 +53,17 @@ authRouter.get(
   authorizeRoles("super_admin"),
   getAllCompany,
 );
-authRouter.get(
-  "/getvendor",
-  isSuperAdmin,
-  authorizeRoles("super_admin"),
-  getAllVendor,
-);
+
 authRouter.delete(
   "/deletecompany/id/:id",
   isSuperAdmin,
   authorizeRoles("super_admin"),
   deleteCompany,
+);
+authRouter.patch(
+  "/updatecompany/:id",
+  isSuperAdmin,
+  authorizeRoles("super_admin"),
+  updateCompany,
 );
 export default authRouter;
