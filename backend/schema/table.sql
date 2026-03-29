@@ -63,3 +63,22 @@ CREATE TABLE member_schedules (
     FOREIGN KEY (company_id) REFERENCES companies(id),
     FOREIGN KEY (member_id) REFERENCES members(id)
 );
+CREATE TABLE payments (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    member_id INT NOT NULL,
+    plan_id INT NOT NULL,
+    discount DECIMAL(10,2) DEFAULT 0.00,
+    paid_amount DECIMAL(10,2) NOT NULL,
+    remarks VARCHAR(255),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_payment_member
+        FOREIGN KEY (member_id) REFERENCES members(id)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE,
+
+    CONSTRAINT fk_payment_plan
+        FOREIGN KEY (plan_id) REFERENCES membership_plans(id)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE
+);

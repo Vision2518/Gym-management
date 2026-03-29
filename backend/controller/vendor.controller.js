@@ -183,22 +183,93 @@ export const getPlanByCompany = async (req, res) => {
     });
   }
 };
-export const deletePlan=async (req,res)=>{
-  try{
-    const {id}=req.params;
-    const [rows]=await db.execute("SELECT *FROM membership_plan WHERE id=?",[id]);
-    if(rows.length===0)
-    {
-      return res.status(404)
-      .json({message:"plan not found"});
+export const deletePlan = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const [rows] = await db.execute(
+      "SELECT *FROM membership_plans WHERE id=?",
+      [id],
+    );
+    if (rows.length === 0) {
+      return res.status(404).json({ message: "plan not found" });
     }
-    await db.execute ("DELETE *FROM membership_plan WHERE id=?",[id]);
-    return res.status(200)
-    .json({message:"plan deleted sucessfully"});
+    await db.execute("DELETE FROM membership_plans WHERE id=?", [id]);
+    return res.status(200).json({ message: "plan deleted sucessfully" });
+  } catch (error) {
+    return res
+      .status(500)
+      .json({ message: "failed to delete", error: error.message });
   }
-  catch(error)
-  {
-   return res.status(500)
-   .json({message:"failed to delete",error:error.message});
+};
+export const updatePlan = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { company_id, name, duration, price } = req.body;
+
+    // At least one field must be provided
+    if (
+      company_id === undefined &&
+      name === undefined &&
+      duration === undefined &&
+      price === undefined
+    ) {
+      return res.status(400).json({
+        message: "At least one field is required to update",
+      });
+    }
+
+    // Check if plan exists
+    const [existingPlan] = await db.query(
+      "SELECT * FROM membership_plans WHERE id = ?",
+      [id]
+    );
+
+    if (existingPlan.length === 0) {
+      return res.status(404).json({
+        message: "Plan not found",
+      });
+    }
+
+    const currentPlan = existingPlan[0];
+
+    const updatedCompanyId = company_id ?? currentPlan.company_id;
+    const updatedName = name ?? currentPlan.name;
+    const updatedDuration = duration ?? currentPlan.duration;
+    const updatedPrice = price ?? currentPlan.price;
+
+    // Check duplicate plan name only if name/company changes
+    if (
+      (name && name !== currentPlan.name) ||
+      (company_id && company_id !== currentPlan.company_id)
+    ) {
+      const [planExists] = await db.query(
+        "SELECT * FROM membership_plans WHERE company_id = ? AND name = ? AND id != ?",
+        [updatedCompanyId, updatedName, id]
+      );
+
+      if (planExists.length > 0) {
+        return res.status(400).json({
+          message: "Plan name already exists for this company",
+        });
+      }
+    }
+
+    // Update plan
+    await db.query(
+      `UPDATE membership_plans
+       SET company_id = ?, name = ?, duration = ?, price = ?
+       WHERE id = ?`,
+      [updatedCompanyId, updatedName, updatedDuration, updatedPrice, id]
+    );
+
+    return res.status(200).json({
+      message: "Plan updated successfully",
+    });
+  } catch (error) {
+    console.log("Update Plan Error:", error);
+    return res.status(500).json({
+      message: "Failed to update plan",
+      error: error.message,
+    });
   }
-}
+};

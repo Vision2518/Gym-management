@@ -6,10 +6,13 @@ import {
   addMember,
   addMemberSchedule,
   deleteMember,
+  deleteSchedule,
   getAllMemberSchedules,
   getMemberById,
   getMembersByCompany,
   getSchedulesByCompany,
+  updateMember,
+  updateSchedule,
 } from "../controller/membership.controller.js";
 export const memberRouter = express.Router();
 memberRouter.post("/add-member", isVendor, authorizeRoles("vendor"), addMember);
@@ -31,6 +34,12 @@ memberRouter.delete(
   authorizeRoles("vendor"),
   deleteMember,
 );
+memberRouter.patch(
+  "/updatemember/:id",
+  isVendor,
+  authorizeRoles("vendor"),
+  updateMember,
+);
 
 memberRouter.post(
   "/addschedule",
@@ -50,6 +59,19 @@ memberRouter.get(
   authorizeRoles("vendor"),
   getSchedulesByCompany,
 );
+memberRouter.delete(
+  "/deleteschedule/:id",
+  isVendor,
+  authorizeRoles("vendor"),
+  deleteSchedule,
+);
+memberRouter.patch(
+  "/updateschedule/:id",
+  isVendor,
+  authorizeRoles("vendor"),
+  updateSchedule,
+);
+
 /*memberRouter.get(
   "/getschedulebymember/:member_id",
   isVendor,

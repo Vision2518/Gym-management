@@ -122,12 +122,10 @@ export const getMembersByCompany = async (req, res) => {
     const company_id = req.vendor?.company_id;
 
     if (!company_id) {
-      return res
-        .status(400)
-        .json({
-          success: false,
-          message: "company_id not found in authenticated vendor token",
-        });
+      return res.status(400).json({
+        success: false,
+        message: "company_id not found in authenticated vendor token",
+      });
     }
 
     const [members] = await db.query(
@@ -175,14 +173,13 @@ export const updateMember = async (req, res, next) => {
       plan_id,
       address,
       status,
-      schedule_id
+      schedule_id,
     } = req.body;
 
     // 1. Check existing member
-    const [existing] = await db.query(
-      "SELECT * FROM members WHERE id = ?",
-      [id]
-    );
+    const [existing] = await db.query("SELECT * FROM members WHERE id = ?", [
+      id,
+    ]);
 
     if (existing.length === 0) {
       return res.status(404).json({
@@ -192,10 +189,9 @@ export const updateMember = async (req, res, next) => {
     }
 
     const oldMember = existing[0];
-
     // 2. Keep old values if new ones not provided
     const updatedFullName = full_name || oldMember.full_name;
-    const updatedCompanyId=company_id || oldMember.company_id;
+    const updatedCompanyId = company_id || oldMember.company_id;
     const updatedEmail = email || oldMember.email;
     const updatedPhone = phone || oldMember.phone;
     const updatedAddress = address || oldMember.address;
@@ -203,13 +199,13 @@ export const updateMember = async (req, res, next) => {
     const updatedAge = age || oldMember.age;
     const updatedPlanId = plan_id || oldMember.plan_id;
     const updatedStatus = status || oldMember.status;
-    const updatedSchedule_Id= status||oldMember.schedule_id;
+    const updatedSchedule_Id = schedule_id || oldMember.schedule_id;
 
     // 3. Optional: Check if plan exists if plan_id changed
     if (plan_id && plan_id !== oldMember.plan_id) {
       const [plan] = await db.query(
         "SELECT * FROM membership_plans WHERE id = ?",
-        [plan_id]
+        [plan_id],
       );
 
       if (plan.length === 0) {
@@ -223,11 +219,11 @@ export const updateMember = async (req, res, next) => {
     // 4. Update member
     await db.query(
       `UPDATE members 
-       SET full_name = ?,company_id=?, email = ?, phone = ?, address = ?, gender = ?, age = ?, plan_id = ?, status = ?,schedule_id
+       SET full_name = ?,company_id=?, email = ?, phone = ?, address = ?, gender = ?, age = ?, plan_id = ?, status = ?,schedule_id=?
        WHERE id = ?`,
       [
         updatedFullName,
-       updatedCompanyId,
+        updatedCompanyId,
         updatedEmail,
         updatedPhone,
         updatedAddress,
@@ -237,13 +233,13 @@ export const updateMember = async (req, res, next) => {
         updatedStatus,
         updatedSchedule_Id,
         id,
-      ]
+      ],
     );
 
     // 5. Fetch updated member
     const [updatedMember] = await db.query(
       "SELECT * FROM members WHERE id = ?",
-      [id]
+      [id],
     );
 
     res.status(200).json({
@@ -327,7 +323,7 @@ export const deleteSchedule = async (req, res) => {
       .json({ message: "failed to delete schedule", error: error.message });
   }
 };
-export const updateMemberSchedule = async (req, res) => {
+export const updateSchedule = async (req, res) => {
   try {
     const { id } = req.params; // schedule id from URL
     const { company_id, start_time, end_time } = req.body;
@@ -342,7 +338,7 @@ export const updateMemberSchedule = async (req, res) => {
     // Check if schedule exists
     const [existing] = await db.query(
       "SELECT * FROM member_schedules WHERE id = ?",
-      [id]
+      [id],
     );
 
     if (existing.length === 0) {
@@ -357,7 +353,7 @@ export const updateMemberSchedule = async (req, res) => {
       `UPDATE member_schedules 
        SET company_id = ?, start_time = ?, end_time = ?
        WHERE id = ?`,
-      [company_id, start_time, end_time, id]
+      [company_id, start_time, end_time, id],
     );
 
     res.status(200).json({
@@ -373,7 +369,6 @@ export const updateMemberSchedule = async (req, res) => {
     });
   }
 };
-
 /*export const getSchedulesByMember = async (req, res) => {
   try {
     const { member_id } = req.params;
