@@ -12,7 +12,7 @@ export const loginAdmin = async (req, res) => {
 
     // 1. check user exists
     const [rows] = await db.execute(
-      "SELECT * FROM super_admin WHERE email = ?",
+      "SELECT email,password FROM super_admin WHERE email = ?",
       [email],
     );
 
@@ -69,7 +69,7 @@ export const addVendor = async (req, res) => {
       });
     }
     const [existingVendor] = await db.query(
-      "SELECT * FROM vendors WHERE username = ?",
+      "SELECT username FROM vendors WHERE username = ?",
       [username],
     );
     if (existingVendor.length > 0) {
@@ -78,7 +78,7 @@ export const addVendor = async (req, res) => {
         .json({ message: "Vendor username already exists" });
     }
     const [existingEmail] = await db.query(
-      "SELECT * FROM vendors WHERE email = ?",
+      "SELECT email FROM vendors WHERE email = ?",
       [email],
     );
     if (existingEmail.length > 0) {
@@ -111,11 +111,10 @@ export const getAllVendor = async (req, res) => {
     console.log("fetching error", error);
   }
 };
-
 export const deleteVendor = async (req, res) => {
   try {
     const { id } = req.params;
-    const [rows] = await db.execute("SELECT * FROM vendors WHERE id=?", [id]);
+    const [rows] = await db.execute("SELECT id FROM vendors WHERE id=?", [id]);
     if (rows.length === 0) {
       return res.status(404).json({ message: "vendor not found" });
     }

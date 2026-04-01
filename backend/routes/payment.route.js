@@ -5,6 +5,8 @@ import {
   addPayment,
   deletePayment,
   getAllPayments,
+  getBillById,
+  getPaymentHistoryByMemberId,
   getPaymentsByMemberId,
   updatePayment,
 } from "../controller/payment.controller.js";
@@ -39,3 +41,7 @@ paymentRouter.delete(
   authorizeRoles("vendor"),
   deletePayment,
 );
+paymentRouter.get("/bill/:member_id", isVendor,
+  authorizeRoles("vendor"),getBillById);
+paymentRouter.get("/history/:member_id", isVendor,
+  authorizeRoles("vendor"),getPaymentHistoryByMemberId);

@@ -70,9 +70,9 @@ export const loginVendor = async (req, res) => {
 };
 export const addMemberPlan = async (req, res) => {
   try {
-    const { id, company_id, name, duration, price } = req.body;
+    const { company_id, name, duration, price } = req.body;
     console.log(req.body);
-    if (!id || !company_id || !name || !duration || !price) {
+    if ( !company_id || !name || !duration || !price) {
       return res.status(400).json({
         message: "All feild are required",
       });
@@ -87,8 +87,8 @@ export const addMemberPlan = async (req, res) => {
       });
     }
     await db.query(
-      "INSERT INTO membership_plans (id,company_id,name, duration, price) VALUES (?,?,?,?,?)",
-      [id, company_id, name, duration, price],
+      "INSERT INTO membership_plans (company_id,name, duration, price) VALUES (?,?,?,?)",
+      [company_id, name, duration, price],
     );
     res.status(201).json({
       message: "plan added sucessfully",

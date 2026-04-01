@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Gym Bill</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        h1, h2 { text-align: center; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 8px; }
+        th { background-color: #f2f2f2; }
+        .total { text-align: right; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <h1>{{gym_name}}</h1>
+    <h2>Receipt</h2>
+    <p><strong>Member:</strong> {{member_name}}</p>
+    <p><strong>Email:</strong> {{member_email}}</p>
+    <p><strong>Phone:</strong> {{member_phone}}</p>
+
+    <table>
+        <tr>
+            <th>Plan</th>
+            <th>Price</th>
+            <th>Paid</th>
+            <th>Discount</th>
+            <th>Total Due</th>
+        </tr>
+        <tr>
+            <td>{{plan_name}}</td>
+            <td>{{plan_price}}</td>
+            <td>{{paid_amount}}</td>
+            <td>{{discount}}</td>
+            <td>{{total_due}}</td>
+        </tr>
+    </table>
+
+    <p><strong>Payment Method:</strong> {{payment_method}}</p>
+    <p><strong>Remarks:</strong> {{remarks}}</p>
+    <p><strong>Date:</strong> {{date}}</p>
+</body>
+</html>
