@@ -21,7 +21,7 @@ vendorRouter.post(
 );
 vendorRouter.get("/getallplan", isVendor, authorizeRoles("vendor"), getAllPlan);
 vendorRouter.get(
-  "/getplanbycompany",
+  "/getplan-company",
   isVendor,
   authorizeRoles("vendor"),
   getPlanByCompany,

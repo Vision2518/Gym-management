@@ -465,31 +465,24 @@ export const deletePayment = async (req, res) => {
 };
 export const getBillById = async (req, res) => {
   try {
-    const { member_id } = req.params;
+    const { payment_id } = req.params;
 
-    // 1. Fetch member + plan + latest payment
-    const [member] = await db.query(
-      `SELECT m.id, m.full_name, m.email, m.phone, m.address,
-              m.plan_id, pl.name AS plan_name, pl.price AS plan_price,c.name AS gym_name
-       FROM members m
-       JOIN membership_plans pl ON m.plan_id = pl.id
-        JOIN companies c ON m.company_id = c.id
-       WHERE m.id = ?`,
-      [member_id],
+    // 1. Fetch payment by payment_id
+    const [paymentRows] = await db.query(
+      `SELECT p.*, m.full_name, m.email, m.phone, m.address,
+              m.plan_id, pl.name AS plan_name, pl.price AS plan_price, c.name AS gym_name
+       FROM payments p
+       JOIN members m ON p.member_id = m.id
+       JOIN membership_plans pl ON p.plan_id = pl.id
+       JOIN companies c ON m.company_id = c.id
+       WHERE p.id = ?`,
+      [payment_id],
     );
 
-    if (member.length === 0) return res.status(404).send("Member not found");
+    if (paymentRows.length === 0) return res.status(404).send("Payment not found");
 
-    const memberData = member[0];
-
-    const [payment] = await db.query(
-      `SELECT * FROM payments
-       WHERE member_id = ? AND plan_id = ?
-       ORDER BY created_at DESC LIMIT 1`,
-      [member_id, memberData.plan_id],
-    );
-
-    const paymentData = payment[0] || {};
+    const memberData = paymentRows[0];
+    const paymentData = paymentRows[0];
 
     const total_due =
       (memberData.plan_price || 0) -

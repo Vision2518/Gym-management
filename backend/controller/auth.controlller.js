@@ -35,8 +35,6 @@ export const loginAdmin = async (req, res) => {
       process.env.JWT_SECRET,
       { expiresIn: "7d" },
     );
-    console.log("JWT_SECRET:", process.env.JWT_SECRET);
-    console.log("JWT_EXPIRES_IN:", process.env.JWT_EXPIRES_IN);
     res.cookie("token", token, {
       httpOnly: true,
       secure: false,
