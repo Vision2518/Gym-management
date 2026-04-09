@@ -1,7 +1,7 @@
 import { Outlet, Navigate } from "react-router-dom";
+import AdminSidebar from "../components/AdminSidebar";
 
 const AdminLayout = () => {
-  // Check authentication
   const isAuthenticated = !!localStorage.getItem("authToken");
 
   if (!isAuthenticated) {
@@ -9,12 +9,11 @@ const AdminLayout = () => {
   }
 
   return (
-    <div className="admin-layout">
-      <header>Admin Header</header>
-      <main>
+    <div className="flex min-h-screen">
+      <AdminSidebar />
+      <main className="flex-1 bg-gray-100 p-6">
         <Outlet />
       </main>
-      <footer>Admin Footer</footer>
     </div>
   );
 };

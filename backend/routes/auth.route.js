@@ -10,6 +10,7 @@ import {
   getAllCompany,
   deleteCompany,
   updateCompany,
+  getDashboardStats,
 } from "../controller/auth.controlller.js";
 import { isSuperAdmin } from "../middlewares/isLogin.js";
 import authorizeRoles from "../middlewares/isAuth.js";
@@ -66,4 +67,5 @@ authRouter.patch(
   authorizeRoles("super_admin"),
   updateCompany,
 );
+authRouter.get("/stats", isSuperAdmin, authorizeRoles("super_admin"), getDashboardStats);
 export default authRouter;

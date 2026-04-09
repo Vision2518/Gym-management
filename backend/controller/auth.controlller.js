@@ -317,6 +317,18 @@ export const updateCompany = async (req, res) => {
     });
   }
 };
+export const getDashboardStats = async (req, res) => {
+  try {
+    const [[{ totalCompanies }]] = await db.query("SELECT COUNT(*) AS totalCompanies FROM companies");
+    const [[{ totalVendors }]] = await db.query("SELECT COUNT(*) AS totalVendors FROM vendors");
+    const [[{ totalMembers }]] = await db.query("SELECT COUNT(*) AS totalMembers FROM members");
+    const [[{ totalRevenue }]] = await db.query("SELECT COALESCE(SUM(paid_amount), 0) AS totalRevenue FROM payments");
+
+    res.status(200).json({ totalCompanies, totalVendors, totalMembers, totalRevenue });
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
 export const verifyToken = async (req, res) => {
   try {
     const token = req.cookies.token;

@@ -9,25 +9,51 @@ export const authAPIs = indexSlice.injectEndpoints({
         method: "POST",
         body: data,
       }),
-      
       invalidatesTags: ["auth"],
-      //providetag when query and get
+    }),
+    vendorLogin: builder.mutation({
+      query: (data) => ({
+        url: "/vendor/login",
+        method: "POST",
+        body: data,
+      }),
+      invalidatesTags: ["auth"],
     }),
     signout: builder.mutation({
-        query: () => ({
-          url: "/auth/signout",
-          method: "POST",
-        }),
-        invalidatesTags: ["auth"],
+      query: () => ({
+        url: "/auth/signout",
+        method: "POST",
       }),
-      verifyToken:builder.query({
-        query:()=>({
-          url:"/auth/verify-token",
-          method:"GET",
-        }),
-        invalidatesTags:["auth"],
-      }) 
-
+      invalidatesTags: ["auth"],
+    }),
+    verifyToken: builder.query({
+      query: () => ({
+        url: "/auth/verify-token",
+        method: "GET",
+      }),
+      providesTags: ["auth"],
+    }),
+    getDashboardStats: builder.query({
+      query: () => ({ url: "/auth/stats", method: "GET" }),
+      providesTags: ["auth"],
+    }),
+    getVendors: builder.query({
+      query: () => ({ url: "/auth/getvendor", method: "GET" }),
+      providesTags: ["vendor"],
+    }),
+    addVendor: builder.mutation({
+      query: (data) => ({ url: "/auth/addvendor", method: "POST", body: data }),
+      invalidatesTags: ["vendor"],
+    }),
+    updateVendor: builder.mutation({
+      query: ({ id, ...data }) => ({ url: `/auth/updatevendor/${id}`, method: "PATCH", body: data }),
+      invalidatesTags: ["vendor"],
+    }),
+    deleteVendor: builder.mutation({
+      query: (id) => ({ url: `/auth/deletevendor/${id}`, method: "DELETE" }),
+      invalidatesTags: ["vendor"],
+    }),
   }),
 });
-export const { useLoginMutation,useSignoutMutation,useVerifyTokenQuery} = authAPIs;
+export const { useLoginMutation, useVendorLoginMutation, useSignoutMutation, useVerifyTokenQuery, useGetDashboardStatsQuery, useGetVendorsQuery, useAddVendorMutation, useUpdateVendorMutation, useDeleteVendorMutation } =
+  authAPIs;
