@@ -235,7 +235,7 @@ export const getAllCompany = async (req, res) => {
     }
     res.status(200).json({
       message: "Company fetched successfully",
-      company: rows[0],
+      company: rows,
     });
   } catch (error) {
     res.status(500).json({ message: error.message });

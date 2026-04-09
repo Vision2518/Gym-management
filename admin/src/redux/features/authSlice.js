@@ -41,6 +41,10 @@ export const authAPIs = indexSlice.injectEndpoints({
       query: () => ({ url: "/auth/getvendor", method: "GET" }),
       providesTags: ["vendor"],
     }),
+    getCompanies: builder.query({
+      query: () => ({ url: "/auth/getcompany", method: "GET" }),
+      providesTags: ["company"],
+    }),
     addVendor: builder.mutation({
       query: (data) => ({ url: "/auth/addvendor", method: "POST", body: data }),
       invalidatesTags: ["vendor"],
@@ -55,5 +59,5 @@ export const authAPIs = indexSlice.injectEndpoints({
     }),
   }),
 });
-export const { useLoginMutation, useVendorLoginMutation, useSignoutMutation, useVerifyTokenQuery, useGetDashboardStatsQuery, useGetVendorsQuery, useAddVendorMutation, useUpdateVendorMutation, useDeleteVendorMutation } =
+export const { useLoginMutation, useVendorLoginMutation, useSignoutMutation, useVerifyTokenQuery, useGetDashboardStatsQuery, useGetVendorsQuery, useGetCompaniesQuery, useAddVendorMutation, useUpdateVendorMutation, useDeleteVendorMutation } =
   authAPIs;

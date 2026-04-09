@@ -2,6 +2,7 @@ import { useState } from "react";
 import { FaPlus, FaEdit, FaTrash } from "react-icons/fa";
 import {
   useGetVendorsQuery,
+  useGetCompaniesQuery,
   useAddVendorMutation,
   useUpdateVendorMutation,
   useDeleteVendorMutation,
@@ -14,6 +15,7 @@ const empty = { company_id: "", username: "", email: "", password: "", number: "
 
 const Vendors = () => {
   const { data, isLoading, isError } = useGetVendorsQuery();
+  const { data: companiesData } = useGetCompaniesQuery();
   const [addVendor] = useAddVendorMutation();
   const [updateVendor] = useUpdateVendorMutation();
   const [deleteVendor] = useDeleteVendorMutation();
@@ -23,6 +25,7 @@ const Vendors = () => {
   const [form, setForm] = useState(empty);
 
   const vendors = data?.vendors || [];
+  const companies = companiesData?.company || [];
 
   const openAdd = () => { setEditing(null); setForm(empty); setShowModal(true); };
   const openEdit = (v) => { setEditing(v); setForm({ company_id: v.company_id, username: v.username, email: v.email, password: "", number: v.number || "" }); setShowModal(true); };
@@ -76,7 +79,7 @@ const Vendors = () => {
           <table className="w-full text-sm text-left text-white">
             <thead className="bg-white/10 text-blue-200 uppercase text-xs">
               <tr>
-                {["#", "Username", "Email", "Number", "Company ID", "Package", "Actions"].map((h) => (
+                {["#", "Username", "Email", "Number", "Company", "Package", "Actions"].map((h) => (
                   <th key={h} className="px-6 py-4">{h}</th>
                 ))}
               </tr>
@@ -90,7 +93,7 @@ const Vendors = () => {
                   <td className="px-6 py-4 font-medium">{v.username}</td>
                   <td className="px-6 py-4">{v.email}</td>
                   <td className="px-6 py-4">{v.number || "-"}</td>
-                  <td className="px-6 py-4">{v.company_id}</td>
+                  <td className="px-6 py-4">{companies.find((c) => c.id === v.company_id)?.name || v.company_id}</td>
                   <td className="px-6 py-4">
                     <span className="px-2 py-1 rounded-full text-xs bg-blue-600">{v.package_type}</span>
                   </td>
@@ -106,20 +109,33 @@ const Vendors = () => {
       </div>
 
       {/* Modal */}
-      {showModal && (
-        <Modal
-          title={editing ? "Edit Vendor" : "Add Vendor"}
-          onClose={closeModal}
-          onSubmit={handleSubmit}
-          submitLabel={editing ? "Update Vendor" : "Add Vendor"}
-        >
-          <Input label="Company ID" name="company_id" type="number" placeholder="Company ID" value={form.company_id} onChange={handleChange} required />
+      <Modal
+        show={showModal}
+        title={editing ? "Edit Vendor" : "Add Vendor"}
+        onClose={closeModal}
+        onSubmit={handleSubmit}
+        submitLabel={editing ? "Update Vendor" : "Add Vendor"}
+      >
+          <label className="flex flex-col text-left">
+            <span>Company <span className="text-red-500 ml-1">*</span></span>
+            <select
+              name="company_id"
+              value={form.company_id}
+              onChange={handleChange}
+              required
+              className="border p-2 rounded"
+            >
+              <option value="">Select Company</option>
+              {companies.map((c) => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </select>
+          </label>
           <Input label="Username" name="username" placeholder="Username" value={form.username} onChange={handleChange} required />
           <Input label="Email" name="email" type="email" placeholder="Email" value={form.email} onChange={handleChange} required />
           <Input label="Password" name="password" type="password" placeholder={editing ? "New Password (optional)" : "Password"} value={form.password} onChange={handleChange} required={!editing} />
           <Input label="Phone Number" name="number" placeholder="Phone Number (optional)" value={form.number} onChange={handleChange} />
         </Modal>
-      )}
     </div>
   );
 };
