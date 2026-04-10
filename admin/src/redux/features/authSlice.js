@@ -57,7 +57,19 @@ export const authAPIs = indexSlice.injectEndpoints({
       query: (id) => ({ url: `/auth/deletevendor/${id}`, method: "DELETE" }),
       invalidatesTags: ["vendor"],
     }),
+    addCompany: builder.mutation({
+      query: (data) => ({ url: "/auth/addcompany", method: "POST", body: data }),
+      invalidatesTags: ["company"],
+    }),
+    updateCompany: builder.mutation({
+      query: ({ id, ...data }) => ({ url: `/auth/updatecompany/${id}`, method: "PATCH", body: data }),
+      invalidatesTags: ["company"],
+    }),
+    deleteCompany: builder.mutation({
+      query: (id) => ({ url: `/auth/deletecompany/id/${id}`, method: "DELETE" }),
+      invalidatesTags: ["company"],
+    }),
   }),
 });
-export const { useLoginMutation, useVendorLoginMutation, useSignoutMutation, useVerifyTokenQuery, useGetDashboardStatsQuery, useGetVendorsQuery, useGetCompaniesQuery, useAddVendorMutation, useUpdateVendorMutation, useDeleteVendorMutation } =
+export const { useLoginMutation, useVendorLoginMutation, useSignoutMutation, useVerifyTokenQuery, useGetDashboardStatsQuery, useGetVendorsQuery, useGetCompaniesQuery, useAddVendorMutation, useUpdateVendorMutation, useDeleteVendorMutation, useAddCompanyMutation, useUpdateCompanyMutation, useDeleteCompanyMutation } =
   authAPIs;
