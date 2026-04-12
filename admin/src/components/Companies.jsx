@@ -166,7 +166,7 @@ const Companies = () => {
         show={showModal}
         title={editing ? "Edit Company" : "Add Company"}
         onClose={closeModal}
-        size="5xl" // WIDE SIZE FOR HORIZONTAL LAYOUT
+        size="4xl" // WIDE SIZE FOR HORIZONTAL LAYOUT
         footerContent={
           <div className="flex justify-end">
             <button

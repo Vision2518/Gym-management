@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { toast, ToastContainer } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
+import { toast } from "react-toastify";
 import logo from "../assets/hero.png";
 import {
   useLoginMutation,
@@ -44,9 +43,7 @@ const GymVendorLogin = ({ role = "admin" }) => {
       else if (decoded.role === "vendor") navigate("/vendor/dashboard");
       else navigate("/");
     } catch (err) {
-      console.error("Login error:", err);
-      const message = err?.data?.message || err?.message || "Login failed";
-      toast.error(message);
+      toast.error(err?.data?.message || err?.data?.error || err?.message || "Invalid credentials");
     }
   };
 
@@ -177,18 +174,6 @@ const GymVendorLogin = ({ role = "admin" }) => {
           </form>
         </div>
       </div>
-      <ToastContainer
-        position="top-right"
-        autoClose={5000}
-        hideProgressBar={false}
-        newestOnTop={false}
-        closeOnClick
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-        theme="light"
-      />
     </div>
   );
 };

@@ -95,7 +95,7 @@ const Vendors = () => {
         <h1 className="text-3xl font-bold text-white">Vendors</h1>
         <button
           onClick={openAdd}
-          className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-5 py-2.5 rounded-xl font-semibold transition-all duration-200 shadow-lg shadow-red-900/20"
+          className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-200 shadow-lg shadow-red-900/20"
         >
           <FaPlus /> Add Vendor
         </button>
@@ -181,58 +181,68 @@ const Vendors = () => {
         show={showModal}
         title={editing ? "Edit Vendor" : "Add Vendor"}
         onClose={closeModal}
+        size="4xl"
         footerContent={
-          <button
-            form="vendor-form"
-            type="submit"
-            className="w-full bg-red-600 hover:bg-red-700 text-white py-4 rounded-xl font-bold transition-all duration-200 shadow-lg shadow-red-900/20"
-          >
-            {editing ? "Update Vendor" : "Add Vendor"}
-          </button>
+          <div className="flex justify-end">
+            <button
+              form="vendor-form"
+              type="submit"
+              className="bg-[#00ab41] hover:bg-green-700 text-white py-3 px-12 rounded-lg font-bold transition-all duration-200 shadow-md transform active:scale-95"
+            >
+              {editing ? "Update Vendor" : "Add Vendor"}
+            </button>
+          </div>
         }
       >
-        <form id="vendor-form" onSubmit={handleSubmit} className="space-y-4">
-          <Select
-            label="Company"
-            name="company_id"
-            options={companies}
-            value={form.company_id}
-            onChange={handleChange}
-            required
-          />
-          <Input
-            label="Username"
-            name="username"
-            placeholder="Username"
-            value={form.username}
-            onChange={handleChange}
-            required
-          />
-          <Input
-            label="Email"
-            name="email"
-            type="email"
-            placeholder="Email"
-            value={form.email}
-            onChange={handleChange}
-            required
-          />
-          <Input
-            label="Password"
-            name="password"
-            type="password"
-            placeholder={editing ? "New Password (optional)" : "Password"}
-            value={form.password}
-            onChange={handleChange}
-            required={!editing}
-          />
-          <Input
-            label="Phone Number"
-            name="number"
-            placeholder="Phone Number (optional)"
-            value={form.number}
-            onChange={handleChange}
-          />
+        <form id="vendor-form" onSubmit={handleSubmit} className="space-y-8">
+          {/* HORIZONTAL GRID ROW 1 */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <Select
+              label="Company"
+              name="company_id"
+              options={companies}
+              value={form.company_id}
+              onChange={handleChange}
+              required
+            />
+            <Input
+              label="Username"
+              name="username"
+              placeholder="Enter username"
+              value={form.username}
+              onChange={handleChange}
+              required
+            />
+            <Input
+              label="Email"
+              name="email"
+              type="email"
+              placeholder="Enter email address"
+              value={form.email}
+              onChange={handleChange}
+              required
+            />
+          </div>
+
+          {/* HORIZONTAL GRID ROW 2 */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <Input
+              label="Password"
+              name="password"
+              type="password"
+              placeholder={editing ? "New Password (optional)" : "Enter password"}
+              value={form.password}
+              onChange={handleChange}
+              required={!editing}
+            />
+            <Input
+              label="Phone Number"
+              name="number"
+              placeholder="Enter phone number"
+              value={form.number}
+              onChange={handleChange}
+            />
+          </div>
         </form>
       </DetailsModal>
 
