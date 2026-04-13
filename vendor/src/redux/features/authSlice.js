@@ -1,41 +1,94 @@
-//auth slice
 import { indexSlice } from "./indexSlice";
 
 export const authAPIs = indexSlice.injectEndpoints({
   endpoints: (builder) => ({
     vendorLogin: builder.mutation({
-      query: (data) => ({
-        url: "/vendor/login",
-        method: "POST",
-        body: data,
-      }),
+      query: (data) => ({ url: "/vendor/login", method: "POST", body: data }),
       invalidatesTags: ["auth"],
     }),
     signout: builder.mutation({
-      query: () => ({
-        url: "/auth/signout",
-        method: "POST",
-      }),
+      query: () => ({ url: "/auth/signout", method: "POST" }),
       invalidatesTags: ["auth"],
     }),
-    verifyToken: builder.query({
-      query: () => ({
-        url: "/auth/verify-token",
-        method: "GET",
-      }),
+    getVendorStats: builder.query({
+      query: () => ({ url: "/vendor/stats" }),
       providesTags: ["auth"],
     }),
-    getDashboardStats: builder.query({
-      query: () => ({ url: "/vendor/stats", method: "GET" }),
-      providesTags: ["auth"],
+
+    // Plans
+    getPlansByCompany: builder.query({
+      query: () => ({ url: "/vendor/getplan-company" }),
+      providesTags: ["plans"],
     }),
-    getVendorProfile: builder.query({
-      query: () => ({ url: "/vendor/profile", method: "GET" }),
-      providesTags: ["vendor-profile"],
+    addPlan: builder.mutation({
+      query: (data) => ({ url: "/vendor/addplan", method: "POST", body: data }),
+      invalidatesTags: ["plans"],
     }),
-    updateVendorProfile: builder.mutation({
-      query: (data) => ({ url: "/vendor/profile", method: "PATCH", body: data }),
-      invalidatesTags: ["vendor-profile"],
+    updatePlan: builder.mutation({
+      query: ({ id, ...data }) => ({ url: `/vendor/updateplan/${id}`, method: "PATCH", body: data }),
+      invalidatesTags: ["plans"],
+    }),
+    deletePlan: builder.mutation({
+      query: (id) => ({ url: `/vendor/deleteplan/${id}`, method: "DELETE" }),
+      invalidatesTags: ["plans"],
+    }),
+
+    // Members
+    getMembersByCompany: builder.query({
+      query: () => ({ url: "/member/getmemberbycompany" }),
+      providesTags: ["members"],
+    }),
+    addMember: builder.mutation({
+      query: (data) => ({ url: "/member/add-member", method: "POST", body: data }),
+      invalidatesTags: ["members"],
+    }),
+    updateMember: builder.mutation({
+      query: ({ id, ...data }) => ({ url: `/member/updatemember/${id}`, method: "PATCH", body: data }),
+      invalidatesTags: ["members"],
+    }),
+    deleteMember: builder.mutation({
+      query: (id) => ({ url: `/member/deletemember/${id}`, method: "DELETE" }),
+      invalidatesTags: ["members"],
+    }),
+
+    // Schedules
+    getSchedulesByCompany: builder.query({
+      query: () => ({ url: "/member/getschedulebycompany/" }),
+      providesTags: ["schedules"],
+    }),
+    addSchedule: builder.mutation({
+      query: (data) => ({ url: "/member/addschedule", method: "POST", body: data }),
+      invalidatesTags: ["schedules"],
+    }),
+    updateSchedule: builder.mutation({
+      query: ({ id, ...data }) => ({ url: `/member/updateschedule/${id}`, method: "PATCH", body: data }),
+      invalidatesTags: ["schedules"],
+    }),
+    deleteSchedule: builder.mutation({
+      query: (id) => ({ url: `/member/deleteschedule/${id}`, method: "DELETE" }),
+      invalidatesTags: ["schedules"],
+    }),
+
+    // Payments
+    getAllPayments: builder.query({
+      query: () => ({ url: "/payment/getpayments" }),
+      providesTags: ["payments"],
+    }),
+    addPayment: builder.mutation({
+      query: (data) => ({ url: "/payment/addpayment", method: "POST", body: data }),
+      invalidatesTags: ["payments"],
+    }),
+    updatePayment: builder.mutation({
+      query: ({ id, ...data }) => ({ url: `/payment/updatepayment/${id}`, method: "PATCH", body: data }),
+      invalidatesTags: ["payments"],
+    }),
+    deletePayment: builder.mutation({
+      query: (id) => ({ url: `/payment/deletepayment/${id}`, method: "DELETE" }),
+      invalidatesTags: ["payments"],
+    }),
+    getPaymentHistory: builder.query({
+      query: (member_id) => ({ url: `/payment/history/${member_id}` }),
+      providesTags: ["payments"],
     }),
   }),
 });
@@ -43,8 +96,22 @@ export const authAPIs = indexSlice.injectEndpoints({
 export const {
   useVendorLoginMutation,
   useSignoutMutation,
-  useVerifyTokenQuery,
-  useGetDashboardStatsQuery,
-  useGetVendorProfileQuery,
-  useUpdateVendorProfileMutation,
+  useGetVendorStatsQuery,
+  useGetPlansByCompanyQuery,
+  useAddPlanMutation,
+  useUpdatePlanMutation,
+  useDeletePlanMutation,
+  useGetMembersByCompanyQuery,
+  useAddMemberMutation,
+  useUpdateMemberMutation,
+  useDeleteMemberMutation,
+  useGetSchedulesByCompanyQuery,
+  useAddScheduleMutation,
+  useUpdateScheduleMutation,
+  useDeleteScheduleMutation,
+  useGetAllPaymentsQuery,
+  useAddPaymentMutation,
+  useUpdatePaymentMutation,
+  useDeletePaymentMutation,
+  useGetPaymentHistoryQuery,
 } = authAPIs;

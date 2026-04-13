@@ -1,9 +1,9 @@
-import { useGetDashboardStatsQuery } from "../redux/features/authSlice";
+import { useGetVendorStatsQuery } from "../redux/features/authSlice";
 import { useSelector } from "react-redux";
 import { FaBuilding, FaUsers, FaChartLine, FaCalendarCheck } from "react-icons/fa";
 
 const statCards = [
-  { key: "assignedCompanies", label: "Assigned Companies", icon: <FaBuilding size={28} />, color: "from-blue-500 to-blue-700" },
+  { key: "assignedCompany", label: "Assigned Company", icon: <FaBuilding size={28} />, color: "from-blue-500 to-blue-700" },
   { key: "totalMembers", label: "Total Members", icon: <FaUsers size={28} />, color: "from-green-500 to-green-700" },
   { key: "activeSubscriptions", label: "Active Subscriptions", icon: <FaChartLine size={28} />, color: "from-purple-500 to-purple-700" },
   { key: "monthlyRevenue", label: "Monthly Revenue (Rs)", icon: <FaCalendarCheck size={28} />, color: "from-yellow-500 to-yellow-600" },
@@ -17,7 +17,7 @@ const getGreeting = () => {
 };
 
 const VendorDashboard = () => {
-  const { data, isLoading, isError } = useGetDashboardStatsQuery();
+  const { data, isLoading, isError } = useGetVendorStatsQuery();
   const email = useSelector((state) => state.auth.email);
 
   return (
@@ -32,7 +32,7 @@ const VendorDashboard = () => {
         </h1>
         <p className="text-purple-200 mt-2 text-sm">{email}</p>
         <p className="text-purple-100 mt-4 text-base max-w-xl">
-          Here's what's happening with your assigned companies and members today. Keep up the great work!
+          Here's what's happening with your assigned company and members today. Keep up the great work!
         </p>
         <div className="absolute right-8 top-6 text-8xl opacity-20 select-none text-white">
           <FaBuilding size={100} />
@@ -53,7 +53,12 @@ const VendorDashboard = () => {
             >
               <div className="text-4xl mb-3">{icon}</div>
               <p className="text-sm font-medium opacity-80">{label}</p>
-              <p className="text-5xl font-extrabold mt-1">{data?.[key] ?? 0}</p>
+              <p className="text-5xl font-extrabold mt-1">
+                {key === "monthlyRevenue" 
+                  ? `Rs ${data?.[key]?.toLocaleString() || '0'}` 
+                  : data?.[key] ?? 0
+                }
+              </p>
             </div>
           ))}
         </div>

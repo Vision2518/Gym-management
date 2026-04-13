@@ -249,3 +249,54 @@ export const updatePlan = async (req, res) => {
     });
   }
 };
+
+export const getVendorStats = async (req, res) => {
+  try {
+    const vendor = req.vendor;
+    const vendorId = vendor.id;
+    const companyId = vendor.company_id;
+
+    // Get company details
+    const [[company]] = await db.query(
+      "SELECT name FROM companies WHERE id = ?",
+      [companyId]
+    );
+
+    // Get total members for this vendor's company
+    const [[{ totalMembers }]] = await db.query(
+      "SELECT COUNT(*) AS totalMembers FROM members WHERE company_id = ?",
+      [companyId]
+    );
+
+    // Get active subscriptions for this vendor's company
+    const [[{ activeSubscriptions }]] = await db.query(
+      `SELECT COUNT(*) AS activeSubscriptions 
+       FROM members m 
+       WHERE m.company_id = ? AND m.status = 'active'`,
+      [companyId]
+    );
+
+    // Get monthly revenue for this vendor's company (current month)
+    const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM format
+    const [[{ monthlyRevenue }]] = await db.query(
+      `SELECT COALESCE(SUM(p.paid_amount), 0) AS monthlyRevenue 
+       FROM payments p 
+       JOIN members m ON p.member_id = m.id 
+       WHERE m.company_id = ? AND DATE_FORMAT(p.payment_date, '%Y-%m') = ?`,
+      [companyId, currentMonth]
+    );
+
+    res.status(200).json({
+      assignedCompany: company?.name || "Unknown Company",
+      totalMembers: totalMembers || 0,
+      activeSubscriptions: activeSubscriptions || 0,
+      monthlyRevenue: monthlyRevenue || 0,
+    });
+  } catch (error) {
+    console.log("Get Vendor Stats Error:", error);
+    res.status(500).json({
+      message: "Server error",
+      error: error.message,
+    });
+  }
+};

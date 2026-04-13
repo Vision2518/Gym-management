@@ -32,18 +32,19 @@ const GymVendorLogin = ({ role = "admin" }) => {
       const fn = isAdmin ? login : vendorLogin;
       const payload = await fn(formData).unwrap();
       const token = payload?.token;
-      if (!token) throw new Error("Invalid login response");
+      alert("token: " + token);
+      if (!token) { alert("No token"); return; }
 
       localStorage.setItem("authToken", token);
       const decoded = JSON.parse(atob(token.split(".")[1]));
+      alert("role: " + decoded.role);
       dispatch(setUser({ email: decoded.email, role: decoded.role }));
-      toast.success("Login successful");
 
       if (decoded.role === "super_admin") navigate("/admin/dashboard");
       else if (decoded.role === "vendor") navigate("/vendor/dashboard");
-      else navigate("/");
+      else alert("Unknown role: " + decoded.role);
     } catch (err) {
-      toast.error(err?.data?.message || err?.data?.error || err?.message || "Invalid credentials");
+      alert("error: " + JSON.stringify(err?.data || err?.message));
     }
   };
 

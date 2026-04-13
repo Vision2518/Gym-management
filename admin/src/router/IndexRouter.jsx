@@ -15,7 +15,7 @@ export const router = createBrowserRouter([
     errorElement: <ErrorPage />,
   },
   {
-    path: "/vendor/login",
+    path: "/vendor-login",
     element: <Login role="vendor" />,
     errorElement: <ErrorPage />,
   },

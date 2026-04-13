@@ -6,6 +6,7 @@ import {
   getPlanByCompany,
   deletePlan,
   updatePlan,
+  getVendorStats,
 } from "../controller/vendor.controller.js";
 import { signout } from "../controller/auth.controlller.js";
 import { isVendor } from "../middlewares/isLogin.js";
@@ -37,4 +38,10 @@ vendorRouter.patch(
   isVendor,
   authorizeRoles("vendor"),
   updatePlan,
+);
+vendorRouter.get(
+  "/stats",
+  isVendor,
+  authorizeRoles("vendor"),
+  getVendorStats,
 );

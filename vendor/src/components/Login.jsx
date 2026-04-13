@@ -18,7 +18,8 @@ const Login = () => {
       const result = await login({ email, password }).unwrap();
       if (result.token) {
         localStorage.setItem("authToken", result.token);
-        dispatch(setUser({ email: result.user.email, role: result.user.role }));
+        const decoded = JSON.parse(atob(result.token.split(".")[1]));
+        dispatch(setUser({ email: decoded.email, role: decoded.role }));
         toast.success("Login successful!");
         navigate("/vendor/dashboard");
       }
