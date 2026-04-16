@@ -1,5 +1,5 @@
 import { createBrowserRouter } from "react-router-dom";
-import VendorLayout from "../layout/VendorLayout";
+import VendorLayout from "../layout/VendorLayout.jsx";
 import Login from "../components/Login";
 import ErrorPage from "../components/ErrorPage";
 import NotFoundPage from "../components/NotFoundPage";

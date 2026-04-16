@@ -1,4 +1,4 @@
-import VendorDashboard from "../components/VendorDashboard";
+import VendorDashboard from "../components/VendorDashboard.jsx";
 import Profile from "../components/Profile";
 import Members from "../components/Members";
 import Plans from "../components/Plans";

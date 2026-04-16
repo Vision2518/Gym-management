@@ -10,7 +10,7 @@ import { paymentRouter } from "./routes/payment.route.js";
 dotenv.config();
 const app = express();
 app.use(cors({
-  origin: ['http://localhost:5173', 'http://localhost:3000', 'http://localhost:3001'],
+  origin: ['http://localhost:5173', 'http://localhost:3000', 'http://localhost:3001', 'http://localhost:3002'],
   credentials: true
 }));
 app.use(express.json());
