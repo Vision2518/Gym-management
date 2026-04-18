@@ -282,7 +282,7 @@ export const getVendorStats = async (req, res) => {
       `SELECT COALESCE(SUM(p.paid_amount), 0) AS monthlyRevenue 
        FROM payments p 
        JOIN members m ON p.member_id = m.id 
-       WHERE m.company_id = ? AND DATE_FORMAT(p.payment_date, '%Y-%m') = ?`,
+       WHERE m.company_id = ? AND DATE_FORMAT(p.created_at, '%Y-%m') = ?`,
       [companyId, currentMonth]
     );
 
