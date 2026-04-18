@@ -29,6 +29,7 @@ const VendorSidebar = () => {
   const handleSignout = async () => {
     await signout();
     localStorage.removeItem("authToken");
+    localStorage.removeItem("vendorUsername");
     dispatch(clearUser());
     navigate("/");
   };

@@ -16,7 +16,8 @@ function App() {
       try {
         const decoded = JSON.parse(atob(token.split(".")[1]));
         if (decoded.exp * 1000 > Date.now()) {
-          dispatch(setUser({ email: decoded.email, role: decoded.role }));
+          const username = localStorage.getItem("vendorUsername");
+          dispatch(setUser({ email: decoded.email, role: decoded.role, username }));
         } else {
           localStorage.removeItem("authToken");
         }

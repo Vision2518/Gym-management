@@ -13,6 +13,7 @@ const getGreeting = () => {
 const VendorDashboard = () => {
   const { data, isLoading, isError } = useGetVendorStatsQuery();
   const email = useSelector((state) => state.auth.email);
+  const username = useSelector((state) => state.auth.username);
   const { text, emoji } = getGreeting();
 
   const statCards = [
@@ -76,7 +77,7 @@ const VendorDashboard = () => {
             <p className="text-purple-200 text-base font-medium">{text}</p>
           </div>
           <h1 className="text-4xl font-extrabold text-white leading-tight">
-            Welcome back, <span className="text-pink-300">Vendor</span> 👋
+            Welcome back, <span className="text-pink-300">{username || email}</span> 👋
           </h1>
           <p className="text-purple-200 mt-1 text-sm">{email}</p>
 
