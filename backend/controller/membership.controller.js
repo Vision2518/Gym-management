@@ -412,7 +412,7 @@ export const getSchedulesByCompany = async (req, res) => {
         ms.start_time,
         ms.end_time
       FROM member_schedules ms
-      JOIN members m ON ms.member_id = m.id
+      LEFT JOIN members m ON ms.member_id = m.id
       WHERE ms.company_id = ?`,
       [company_id],
     );
