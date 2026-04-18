@@ -192,6 +192,7 @@ export const addPayment = async (req, res) => {
 };
 export const getAllPayments = async (req, res) => {
   try {
+    const company_id = req.vendor?.company_id;
     const [payments] = await db.query(
       `SELECT p.id, p.member_id, m.full_name AS member_name, 
               p.plan_id, pl.name AS plan_name, 
@@ -199,7 +200,9 @@ export const getAllPayments = async (req, res) => {
        FROM payments p
        JOIN members m ON p.member_id = m.id
        JOIN membership_plans pl ON p.plan_id = pl.id
+       WHERE m.company_id = ?
        ORDER BY p.created_at DESC`,
+      [company_id]
     );
     if (payments.length === 0) {
       return res
