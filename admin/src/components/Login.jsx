@@ -32,12 +32,10 @@ const GymVendorLogin = ({ role = "admin" }) => {
       const fn = isAdmin ? login : vendorLogin;
       const payload = await fn(formData).unwrap();
       const token = payload?.token;
-      alert("token: " + token);
       if (!token) { alert("No token"); return; }
 
       localStorage.setItem("authToken", token);
       const decoded = JSON.parse(atob(token.split(".")[1]));
-      alert("role: " + decoded.role);
       dispatch(setUser({ email: decoded.email, role: decoded.role }));
 
       if (decoded.role === "super_admin") navigate("/admin/dashboard");
