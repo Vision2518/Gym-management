@@ -23,36 +23,48 @@ const empty = {
 const Vendors = () => {
   const { data, isLoading, isError } = useGetVendorsQuery();
   const { data: companiesData } = useGetCompaniesQuery();
-  const [addVendor] = useAddVendorMutation();
-  const [updateVendor] = useUpdateVendorMutation();
-  const [deleteVendor] = useDeleteVendorMutation();
+  const [addVendor, { isLoading: isAddingVendor }] = useAddVendorMutation();
+  const [updateVendor, { isLoading: isUpdatingVendor }] = useUpdateVendorMutation();
+  const [deleteVendor, { isLoading: isDeletingVendor }] = useDeleteVendorMutation();
 
   const [showModal, setShowModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [editing, setEditing] = useState(null);
   const [deletingVendor, setDeletingVendor] = useState(null);
   const [form, setForm] = useState(empty);
+  const [initialForm, setInitialForm] = useState(empty);
 
   const vendors = data?.vendors || [];
   const companies = companiesData?.company || [];
+  const isSubmitting = isAddingVendor || isUpdatingVendor;
+  const isDirty = JSON.stringify(form) !== JSON.stringify(initialForm);
+  const isSubmitDisabled = isSubmitting || (editing && !isDirty);
 
   const openAdd = () => {
     setEditing(null);
     setForm(empty);
+    setInitialForm(empty);
     setShowModal(true);
   };
   const openEdit = (v) => {
-    setEditing(v);
-    setForm({
+    const nextForm = {
       company_id: v.company_id,
       username: v.username,
       email: v.email,
       password: "",
       number: v.number || "",
-    });
+    };
+    setEditing(v);
+    setForm(nextForm);
+    setInitialForm(nextForm);
     setShowModal(true);
   };
-  const closeModal = () => setShowModal(false);
+  const closeModal = () => {
+    setShowModal(false);
+    setEditing(null);
+    setForm(empty);
+    setInitialForm(empty);
+  };
 
   const handleChange = (e) =>
     setForm((p) => ({ ...p, [e.target.name]: e.target.value }));
@@ -97,7 +109,7 @@ const Vendors = () => {
           onClick={openAdd}
           className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-200 shadow-lg shadow-red-900/20"
         >
-          <FaPlus /> Add Vendor
+         Add Vendor
         </button>
       </div>
 
@@ -187,9 +199,16 @@ const Vendors = () => {
             <button
               form="vendor-form"
               type="submit"
-              className="bg-[#00ab41] hover:bg-green-700 text-white py-3 px-12 rounded-lg font-bold transition-all duration-200 shadow-md transform active:scale-95"
+              disabled={isSubmitDisabled}
+              className="bg-[#00ab41] hover:bg-green-700 disabled:bg-green-400 disabled:cursor-not-allowed text-white py-3 px-12 rounded-lg font-bold transition-all duration-200 shadow-md transform active:scale-95"
             >
-              {editing ? "Update Vendor" : "Add Vendor"}
+              {isSubmitting
+                ? editing
+                  ? "Updating..."
+                  : "Adding..."
+                : editing
+                  ? "Update Vendor"
+                  : "Add Vendor"}
             </button>
           </div>
         }
@@ -256,15 +275,17 @@ const Vendors = () => {
           <div className="flex gap-3 w-full">
             <button
               onClick={() => setShowDeleteModal(false)}
+              disabled={isDeletingVendor}
               className="flex-1 px-4 py-3 text-gray-600 bg-gray-100 rounded-xl hover:bg-gray-200 font-semibold transition-all"
             >
               Cancel
             </button>
             <button
               onClick={handleDelete}
-              className="flex-1 bg-red-600 hover:bg-red-700 text-white py-3 rounded-xl font-bold transition-all shadow-lg shadow-red-900/20"
+              disabled={isDeletingVendor}
+              className="flex-1 bg-red-600 hover:bg-red-700 disabled:bg-red-400 disabled:cursor-not-allowed text-white py-3 rounded-xl font-bold transition-all shadow-lg shadow-red-900/20"
             >
-              Confirm Delete
+              {isDeletingVendor ? "Deleting..." : "Confirm Delete"}
             </button>
           </div>
         }

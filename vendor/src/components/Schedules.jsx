@@ -9,24 +9,37 @@ const empty = { company_id: "", start_time: "", end_time: "" };
 
 const Schedules = () => {
   const { data, isLoading, isError } = useGetSchedulesByCompanyQuery();
-  const [addSchedule] = useAddScheduleMutation();
-  const [updateSchedule] = useUpdateScheduleMutation();
-  const [deleteSchedule] = useDeleteScheduleMutation();
+  const [addSchedule, { isLoading: isAddingSchedule }] = useAddScheduleMutation();
+  const [updateSchedule, { isLoading: isUpdatingSchedule }] = useUpdateScheduleMutation();
+  const [deleteSchedule, { isLoading: isDeletingSchedule }] = useDeleteScheduleMutation();
 
   const [showModal, setShowModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [editing, setEditing] = useState(null);
+  const [deletingSchedule, setDeletingSchedule] = useState(null);
   const [form, setForm] = useState(empty);
+  const [initialForm, setInitialForm] = useState(empty);
 
   const schedules = data?.schedules || [];
+  const isSubmitting = isAddingSchedule || isUpdatingSchedule;
+  const isDirty = JSON.stringify(form) !== JSON.stringify(initialForm);
+  const isSubmitDisabled = isSubmitting || (editing && !isDirty);
 
   const openAdd = () => {
     const token = localStorage.getItem("authToken");
     const decoded = JSON.parse(atob(token.split(".")[1]));
     setEditing(null);
     setForm({ company_id: decoded.company_id, start_time: "", end_time: "" });
+    setInitialForm({ company_id: decoded.company_id, start_time: "", end_time: "" });
     setShowModal(true);
   };
-  const openEdit = (s) => { setEditing(s); setForm({ company_id: s.company_id, start_time: s.start_time, end_time: s.end_time }); setShowModal(true); };
+  const openEdit = (s) => {
+    const nextForm = { company_id: s.company_id, start_time: s.start_time, end_time: s.end_time };
+    setEditing(s);
+    setForm(nextForm);
+    setInitialForm(nextForm);
+    setShowModal(true);
+  };
   const handleChange = (e) => setForm((p) => ({ ...p, [e.target.name]: e.target.value }));
 
   const handleSubmit = async (e) => {
@@ -40,16 +53,24 @@ const Schedules = () => {
         toast.success("Schedule added");
       }
       setShowModal(false);
+      setEditing(null);
+      setForm(empty);
+      setInitialForm(empty);
     } catch (err) {
       toast.error(err?.data?.message || "Operation failed");
     }
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm("Delete this schedule?")) return;
+  const openDelete = (schedule) => {
+    setDeletingSchedule(schedule);
+    setShowDeleteModal(true);
+  };
+
+  const handleDelete = async () => {
     try {
-      await deleteSchedule(id).unwrap();
+      await deleteSchedule(deletingSchedule.id).unwrap();
       toast.success("Schedule deleted");
+      setShowDeleteModal(false);
     } catch (err) {
       toast.error(err?.data?.message || "Delete failed");
     }
@@ -83,7 +104,7 @@ const Schedules = () => {
                     <td className="px-6 py-4">{s.end_time}</td>
                     <td className="px-6 py-4 flex gap-3">
                       <button onClick={() => openEdit(s)} className="text-yellow-400 hover:text-yellow-300"><FaEdit size={16} /></button>
-                      <button onClick={() => handleDelete(s.id)} className="text-red-400 hover:text-red-300"><FaTrash size={16} /></button>
+                      <button onClick={() => openDelete(s)} disabled={isDeletingSchedule} className="text-red-400 hover:text-red-300 disabled:text-red-200 disabled:cursor-not-allowed"><FaTrash size={16} /></button>
                     </td>
                   </tr>
                 ))}
@@ -92,9 +113,45 @@ const Schedules = () => {
         )}
       </div>
 
-      <Modal show={showModal} title={editing ? "Edit Schedule" : "Add Schedule"} onClose={() => setShowModal(false)} onSubmit={handleSubmit} submitLabel={editing ? "Update" : "Add Schedule"}>
+      <Modal show={showModal} title={editing ? "Edit Schedule" : "Add Schedule"} onClose={() => { setShowModal(false); setEditing(null); setForm(empty); setInitialForm(empty); }} onSubmit={handleSubmit} submitLabel={editing ? "Update" : "Add Schedule"} submitLoadingLabel={editing ? "Updating..." : "Adding..."} isSubmitting={isSubmitDisabled}>
         <Input label="Start Time" name="start_time" type="time" value={form.start_time} onChange={handleChange} required />
         <Input label="End Time" name="end_time" type="time" value={form.end_time} onChange={handleChange} required />
+      </Modal>
+
+      <Modal
+        show={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        title="Delete Schedule"
+        footerContent={
+          <div className="flex gap-4 w-full">
+            <button
+              type="button"
+              onClick={() => setShowDeleteModal(false)}
+              disabled={isDeletingSchedule}
+              className="flex-1 px-4 py-3 text-gray-600 bg-gray-100 rounded-xl hover:bg-gray-200 disabled:bg-gray-50 disabled:cursor-not-allowed font-semibold transition-all"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={handleDelete}
+              disabled={isDeletingSchedule}
+              className="flex-1 bg-red-600 hover:bg-red-700 disabled:bg-red-400 disabled:cursor-not-allowed text-white py-3 rounded-xl font-bold transition-all"
+            >
+              {isDeletingSchedule ? "Deleting..." : "Confirm Delete"}
+            </button>
+          </div>
+        }
+      >
+        <div className="text-center py-4">
+          <div className="mx-auto w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mb-4">
+            <FaTrash className="text-red-500 text-2xl" />
+          </div>
+          <p className="text-gray-600 text-lg">Are you sure you want to delete schedule:</p>
+          <p className="text-2xl font-bold text-gray-900 mt-2">
+            {deletingSchedule ? `${deletingSchedule.start_time} - ${deletingSchedule.end_time}` : ""}
+          </p>
+        </div>
       </Modal>
     </div>
   );

@@ -5,8 +5,8 @@ import { clearUser } from "../redux/features/authState";
 
 const navItems = [
   { label: "Dashboard", path: "/admin/dashboard" },
-  { label: "Vendors", path: "/admin/vendors" },
   { label: "Companies", path: "/admin/companies" },
+  { label: "Vendors", path: "/admin/vendors" },
 ];
 
 const AdminSidebar = () => {

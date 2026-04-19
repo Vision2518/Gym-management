@@ -9,18 +9,30 @@ const empty = { name: "", duration: "", price: "" };
 
 const Plans = () => {
   const { data, isLoading, isError } = useGetPlansByCompanyQuery();
-  const [addPlan] = useAddPlanMutation();
-  const [updatePlan] = useUpdatePlanMutation();
-  const [deletePlan] = useDeletePlanMutation();
+  const [addPlan, { isLoading: isAddingPlan }] = useAddPlanMutation();
+  const [updatePlan, { isLoading: isUpdatingPlan }] = useUpdatePlanMutation();
+  const [deletePlan, { isLoading: isDeletingPlan }] = useDeletePlanMutation();
 
   const [showModal, setShowModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [editing, setEditing] = useState(null);
+  const [deletingPlan, setDeletingPlan] = useState(null);
   const [form, setForm] = useState(empty);
+  const [initialForm, setInitialForm] = useState(empty);
 
   const plans = data?.plans || [];
+  const isSubmitting = isAddingPlan || isUpdatingPlan;
+  const isDirty = JSON.stringify(form) !== JSON.stringify(initialForm);
+  const isSubmitDisabled = isSubmitting || (editing && !isDirty);
 
-  const openAdd = () => { setEditing(null); setForm(empty); setShowModal(true); };
-  const openEdit = (p) => { setEditing(p); setForm({ name: p.plan_name, duration: p.duration, price: p.price }); setShowModal(true); };
+  const openAdd = () => { setEditing(null); setForm(empty); setInitialForm(empty); setShowModal(true); };
+  const openEdit = (p) => {
+    const nextForm = { name: p.plan_name, duration: p.duration, price: p.price };
+    setEditing(p);
+    setForm(nextForm);
+    setInitialForm(nextForm);
+    setShowModal(true);
+  };
   const handleChange = (e) => setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
 
   const handleSubmit = async (e) => {
@@ -36,16 +48,24 @@ const Plans = () => {
         toast.success("Plan added");
       }
       setShowModal(false);
+      setEditing(null);
+      setForm(empty);
+      setInitialForm(empty);
     } catch (err) {
       toast.error(err?.data?.message || "Operation failed");
     }
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm("Delete this plan?")) return;
+  const openDelete = (plan) => {
+    setDeletingPlan(plan);
+    setShowDeleteModal(true);
+  };
+
+  const handleDelete = async () => {
     try {
-      await deletePlan(id).unwrap();
+      await deletePlan(deletingPlan.id).unwrap();
       toast.success("Plan deleted");
+      setShowDeleteModal(false);
     } catch (err) {
       toast.error(err?.data?.message || "Delete failed");
     }
@@ -79,7 +99,7 @@ const Plans = () => {
                     <td className="px-6 py-4">Rs {p.price}</td>
                     <td className="px-6 py-4 flex gap-3">
                       <button onClick={() => openEdit(p)} className="text-yellow-400 hover:text-yellow-300"><FaEdit size={16} /></button>
-                      <button onClick={() => handleDelete(p.id)} className="text-red-400 hover:text-red-300"><FaTrash size={16} /></button>
+                      <button onClick={() => openDelete(p)} disabled={isDeletingPlan} className="text-red-400 hover:text-red-300 disabled:text-red-200 disabled:cursor-not-allowed"><FaTrash size={16} /></button>
                     </td>
                   </tr>
                 ))}
@@ -88,10 +108,44 @@ const Plans = () => {
         )}
       </div>
 
-      <Modal show={showModal} title={editing ? "Edit Plan" : "Add Plan"} onClose={() => setShowModal(false)} onSubmit={handleSubmit} submitLabel={editing ? "Update Plan" : "Add Plan"}>
+      <Modal show={showModal} title={editing ? "Edit Plan" : "Add Plan"} onClose={() => { setShowModal(false); setEditing(null); setForm(empty); setInitialForm(empty); }} onSubmit={handleSubmit} submitLabel={editing ? "Update Plan" : "Add Plan"} submitLoadingLabel={editing ? "Updating..." : "Adding..."} isSubmitting={isSubmitDisabled}>
         <Input label="Plan Name" name="name" placeholder="e.g. Gold" value={form.name} onChange={handleChange} required />
         <Input label="Duration" name="duration" placeholder="e.g. 1 Month" value={form.duration} onChange={handleChange} required />
         <Input label="Price (Rs)" name="price" type="number" placeholder="e.g. 2000" value={form.price} onChange={handleChange} required />
+      </Modal>
+
+      <Modal
+        show={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        title="Delete Plan"
+        footerContent={
+          <div className="flex gap-4 w-full">
+            <button
+              type="button"
+              onClick={() => setShowDeleteModal(false)}
+              disabled={isDeletingPlan}
+              className="flex-1 px-4 py-3 text-gray-600 bg-gray-100 rounded-xl hover:bg-gray-200 disabled:bg-gray-50 disabled:cursor-not-allowed font-semibold transition-all"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={handleDelete}
+              disabled={isDeletingPlan}
+              className="flex-1 bg-red-600 hover:bg-red-700 disabled:bg-red-400 disabled:cursor-not-allowed text-white py-3 rounded-xl font-bold transition-all"
+            >
+              {isDeletingPlan ? "Deleting..." : "Confirm Delete"}
+            </button>
+          </div>
+        }
+      >
+        <div className="text-center py-4">
+          <div className="mx-auto w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mb-4">
+            <FaTrash className="text-red-500 text-2xl" />
+          </div>
+          <p className="text-gray-600 text-lg">Are you sure you want to delete plan:</p>
+          <p className="text-2xl font-bold text-gray-900 mt-2">{deletingPlan?.plan_name}</p>
+        </div>
       </Modal>
     </div>
   );

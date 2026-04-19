@@ -17,20 +17,32 @@ const Members = () => {
   const { data, isLoading, isError } = useGetMembersByCompanyQuery();
   const { data: schedulesData } = useGetSchedulesByCompanyQuery();
   const { data: plansData } = useGetPlansByCompanyQuery();
-  const [addMember] = useAddMemberMutation();
-  const [updateMember] = useUpdateMemberMutation();
-  const [deleteMember] = useDeleteMemberMutation();
+  const [addMember, { isLoading: isAddingMember }] = useAddMemberMutation();
+  const [updateMember, { isLoading: isUpdatingMember }] = useUpdateMemberMutation();
+  const [deleteMember, { isLoading: isDeletingMember }] = useDeleteMemberMutation();
 
   const [showModal, setShowModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [editing, setEditing] = useState(null);
+  const [deletingMember, setDeletingMember] = useState(null);
   const [form, setForm] = useState(empty);
+  const [initialForm, setInitialForm] = useState(empty);
 
   const members = data?.members || [];
   const schedules = schedulesData?.schedules || [];
   const plans = plansData?.plans || [];
+  const isSubmitting = isAddingMember || isUpdatingMember;
+  const isDirty = JSON.stringify(form) !== JSON.stringify(initialForm);
+  const isSubmitDisabled = isSubmitting || (editing && !isDirty);
 
-  const openAdd = () => { setEditing(null); setForm(empty); setShowModal(true); };
-  const openEdit = (m) => { setEditing(m); setForm({ full_name: m.full_name, phone: m.phone, email: m.email || "", gender: m.gender || "", age: m.age || "", address: m.address || "", join_date: m.join_date?.split("T")[0] || "", status: m.status, plan_id: m.plan_id, schedule_id: m.schedule_id, company_id: m.company_id }); setShowModal(true); };
+  const openAdd = () => { setEditing(null); setForm(empty); setInitialForm(empty); setShowModal(true); };
+  const openEdit = (m) => {
+    const nextForm = { full_name: m.full_name, phone: m.phone, email: m.email || "", gender: m.gender || "", age: m.age || "", address: m.address || "", join_date: m.join_date?.split("T")[0] || "", status: m.status, plan_id: m.plan_id, schedule_id: m.schedule_id, company_id: m.company_id };
+    setEditing(m);
+    setForm(nextForm);
+    setInitialForm(nextForm);
+    setShowModal(true);
+  };
 
   const handleChange = (e) => setForm((p) => ({ ...p, [e.target.name]: e.target.value }));
 
@@ -45,16 +57,24 @@ const Members = () => {
         toast.success("Member added");
       }
       setShowModal(false);
+      setEditing(null);
+      setForm(empty);
+      setInitialForm(empty);
     } catch (err) {
       toast.error(err?.data?.message || "Operation failed");
     }
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm("Delete this member?")) return;
+  const openDelete = (member) => {
+    setDeletingMember(member);
+    setShowDeleteModal(true);
+  };
+
+  const handleDelete = async () => {
     try {
-      await deleteMember(id).unwrap();
+      await deleteMember(deletingMember.id).unwrap();
       toast.success("Member deleted");
+      setShowDeleteModal(false);
     } catch (err) {
       toast.error(err?.data?.message || "Delete failed");
     }
@@ -90,7 +110,7 @@ const Members = () => {
                     <td className="px-6 py-4"><span className={`px-2 py-1 rounded-full text-xs ${m.status === "active" ? "bg-green-600" : "bg-red-600"}`}>{m.status}</span></td>
                     <td className="px-6 py-4 flex gap-3">
                       <button onClick={() => openEdit(m)} className="text-yellow-400 hover:text-yellow-300"><FaEdit size={16} /></button>
-                      <button onClick={() => handleDelete(m.id)} className="text-red-400 hover:text-red-300"><FaTrash size={16} /></button>
+                      <button onClick={() => openDelete(m)} disabled={isDeletingMember} className="text-red-400 hover:text-red-300 disabled:text-red-200 disabled:cursor-not-allowed"><FaTrash size={16} /></button>
                     </td>
                   </tr>
                 ))}
@@ -99,7 +119,7 @@ const Members = () => {
         )}
       </div>
 
-      <Modal show={showModal} title={editing ? "Edit Member" : "Add Member"} onClose={() => setShowModal(false)} onSubmit={handleSubmit} submitLabel={editing ? "Update" : "Add Member"} size="lg">
+      <Modal show={showModal} title={editing ? "Edit Member" : "Add Member"} onClose={() => { setShowModal(false); setEditing(null); setForm(empty); setInitialForm(empty); }} onSubmit={handleSubmit} submitLabel={editing ? "Update" : "Add Member"} submitLoadingLabel={editing ? "Updating..." : "Adding..."} isSubmitting={isSubmitDisabled} size="lg">
         <div className="grid grid-cols-2 gap-4">
           <Input label="Full Name" name="full_name" placeholder="Full Name" value={form.full_name} onChange={handleChange} required />
           <Input label="Phone" name="phone" placeholder="Phone" value={form.phone} onChange={handleChange} required />
@@ -139,6 +159,40 @@ const Members = () => {
           </label>
         </div>
         <Input label="Address" name="address" placeholder="Address" value={form.address} onChange={handleChange} />
+      </Modal>
+
+      <Modal
+        show={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        title="Delete Member"
+        footerContent={
+          <div className="flex gap-4 w-full">
+            <button
+              type="button"
+              onClick={() => setShowDeleteModal(false)}
+              disabled={isDeletingMember}
+              className="flex-1 px-4 py-3 text-gray-600 bg-gray-100 rounded-xl hover:bg-gray-200 disabled:bg-gray-50 disabled:cursor-not-allowed font-semibold transition-all"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={handleDelete}
+              disabled={isDeletingMember}
+              className="flex-1 bg-red-600 hover:bg-red-700 disabled:bg-red-400 disabled:cursor-not-allowed text-white py-3 rounded-xl font-bold transition-all"
+            >
+              {isDeletingMember ? "Deleting..." : "Confirm Delete"}
+            </button>
+          </div>
+        }
+      >
+        <div className="text-center py-4">
+          <div className="mx-auto w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mb-4">
+            <FaTrash className="text-red-500 text-2xl" />
+          </div>
+          <p className="text-gray-600 text-lg">Are you sure you want to delete member:</p>
+          <p className="text-2xl font-bold text-gray-900 mt-2">{deletingMember?.full_name}</p>
+        </div>
       </Modal>
     </div>
   );

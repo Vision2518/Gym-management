@@ -9,18 +9,30 @@ const empty = { member_id: "", plan_id: "", discount: 0, paid_amount: "", paymen
 
 const Payments = () => {
   const { data, isLoading, isError } = useGetAllPaymentsQuery();
-  const [addPayment] = useAddPaymentMutation();
-  const [updatePayment] = useUpdatePaymentMutation();
-  const [deletePayment] = useDeletePaymentMutation();
+  const [addPayment, { isLoading: isAddingPayment }] = useAddPaymentMutation();
+  const [updatePayment, { isLoading: isUpdatingPayment }] = useUpdatePaymentMutation();
+  const [deletePayment, { isLoading: isDeletingPayment }] = useDeletePaymentMutation();
 
   const [showModal, setShowModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [editing, setEditing] = useState(null);
+  const [deletingPayment, setDeletingPayment] = useState(null);
   const [form, setForm] = useState(empty);
+  const [initialForm, setInitialForm] = useState(empty);
 
   const payments = data?.payments || [];
+  const isSubmitting = isAddingPayment || isUpdatingPayment;
+  const isDirty = JSON.stringify(form) !== JSON.stringify(initialForm);
+  const isSubmitDisabled = isSubmitting || (editing && !isDirty);
 
-  const openAdd = () => { setEditing(null); setForm(empty); setShowModal(true); };
-  const openEdit = (p) => { setEditing(p); setForm({ member_id: p.member_id, plan_id: p.plan_id, discount: p.discount, paid_amount: p.paid_amount, payment_method: p.payment_method, remarks: p.remarks || "" }); setShowModal(true); };
+  const openAdd = () => { setEditing(null); setForm(empty); setInitialForm(empty); setShowModal(true); };
+  const openEdit = (p) => {
+    const nextForm = { member_id: p.member_id, plan_id: p.plan_id, discount: p.discount, paid_amount: p.paid_amount, payment_method: p.payment_method, remarks: p.remarks || "" };
+    setEditing(p);
+    setForm(nextForm);
+    setInitialForm(nextForm);
+    setShowModal(true);
+  };
   const handleChange = (e) => setForm((p) => ({ ...p, [e.target.name]: e.target.value }));
 
   const handleSubmit = async (e) => {
@@ -34,16 +46,24 @@ const Payments = () => {
         toast.success("Payment added");
       }
       setShowModal(false);
+      setEditing(null);
+      setForm(empty);
+      setInitialForm(empty);
     } catch (err) {
       toast.error(err?.data?.message || "Operation failed");
     }
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm("Delete this payment?")) return;
+  const openDelete = (payment) => {
+    setDeletingPayment(payment);
+    setShowDeleteModal(true);
+  };
+
+  const handleDelete = async () => {
     try {
-      await deletePayment(id).unwrap();
+      await deletePayment(deletingPayment.id).unwrap();
       toast.success("Payment deleted");
+      setShowDeleteModal(false);
     } catch (err) {
       toast.error(err?.data?.message || "Delete failed");
     }
@@ -84,7 +104,7 @@ const Payments = () => {
                     <td className="px-6 py-4 flex gap-3">
                       <button onClick={() => handleBill(p.id)} className="text-green-400 hover:text-green-300"><FaFileInvoice size={16} /></button>
                       <button onClick={() => openEdit(p)} className="text-yellow-400 hover:text-yellow-300"><FaEdit size={16} /></button>
-                      <button onClick={() => handleDelete(p.id)} className="text-red-400 hover:text-red-300"><FaTrash size={16} /></button>
+                      <button onClick={() => openDelete(p)} disabled={isDeletingPayment} className="text-red-400 hover:text-red-300 disabled:text-red-200 disabled:cursor-not-allowed"><FaTrash size={16} /></button>
                     </td>
                   </tr>
                 ))}
@@ -93,7 +113,7 @@ const Payments = () => {
         )}
       </div>
 
-      <Modal show={showModal} title={editing ? "Edit Payment" : "Add Payment"} onClose={() => setShowModal(false)} onSubmit={handleSubmit} submitLabel={editing ? "Update" : "Add Payment"}>
+      <Modal show={showModal} title={editing ? "Edit Payment" : "Add Payment"} onClose={() => { setShowModal(false); setEditing(null); setForm(empty); setInitialForm(empty); }} onSubmit={handleSubmit} submitLabel={editing ? "Update" : "Add Payment"} submitLoadingLabel={editing ? "Updating..." : "Adding..."} isSubmitting={isSubmitDisabled}>
         <Input label="Member ID" name="member_id" type="number" placeholder="Member ID" value={form.member_id} onChange={handleChange} required />
         <Input label="Plan ID" name="plan_id" type="number" placeholder="Plan ID" value={form.plan_id} onChange={handleChange} required />
         <Input label="Paid Amount" name="paid_amount" type="number" placeholder="Amount" value={form.paid_amount} onChange={handleChange} required />
@@ -107,6 +127,40 @@ const Payments = () => {
           </select>
         </label>
         <Input label="Remarks" name="remarks" placeholder="Optional remarks" value={form.remarks} onChange={handleChange} />
+      </Modal>
+
+      <Modal
+        show={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        title="Delete Payment"
+        footerContent={
+          <div className="flex gap-4 w-full">
+            <button
+              type="button"
+              onClick={() => setShowDeleteModal(false)}
+              disabled={isDeletingPayment}
+              className="flex-1 px-4 py-3 text-gray-600 bg-gray-100 rounded-xl hover:bg-gray-200 disabled:bg-gray-50 disabled:cursor-not-allowed font-semibold transition-all"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={handleDelete}
+              disabled={isDeletingPayment}
+              className="flex-1 bg-red-600 hover:bg-red-700 disabled:bg-red-400 disabled:cursor-not-allowed text-white py-3 rounded-xl font-bold transition-all"
+            >
+              {isDeletingPayment ? "Deleting..." : "Confirm Delete"}
+            </button>
+          </div>
+        }
+      >
+        <div className="text-center py-4">
+          <div className="mx-auto w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mb-4">
+            <FaTrash className="text-red-500 text-2xl" />
+          </div>
+          <p className="text-gray-600 text-lg">Are you sure you want to delete payment for:</p>
+          <p className="text-2xl font-bold text-gray-900 mt-2">{deletingPayment?.member_name}</p>
+        </div>
       </Modal>
     </div>
   );

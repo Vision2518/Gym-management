@@ -15,32 +15,39 @@ const empty = { name: "", email: "", number: "", address: "" };
 
 const Companies = () => {
   const { data, isLoading, isError } = useGetCompaniesQuery();
-  const [addCompany] = useAddCompanyMutation();
-  const [updateCompany] = useUpdateCompanyMutation();
-  const [deleteCompany] = useDeleteCompanyMutation();
+  const [addCompany, { isLoading: isAddingCompany }] = useAddCompanyMutation();
+  const [updateCompany, { isLoading: isUpdatingCompany }] = useUpdateCompanyMutation();
+  const [deleteCompany, { isLoading: isDeletingCompany }] = useDeleteCompanyMutation();
 
   const [showModal, setShowModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [editing, setEditing] = useState(null);
   const [deletingCompany, setDeletingCompany] = useState(null);
   const [form, setForm] = useState(empty);
+  const [initialForm, setInitialForm] = useState(empty);
 
   const companies = data?.company || [];
+  const isSubmitting = isAddingCompany || isUpdatingCompany;
+  const isDirty = JSON.stringify(form) !== JSON.stringify(initialForm);
+  const isSubmitDisabled = isSubmitting || (editing && !isDirty);
 
   const openAdd = () => {
     setEditing(null);
     setForm(empty);
+    setInitialForm(empty);
     setShowModal(true);
   };
 
   const openEdit = (company) => {
-    setEditing(company);
-    setForm({
+    const nextForm = {
       name: company.name || "",
       email: company.email || "",
       number: company.number || "",
       address: company.address || "",
-    });
+    };
+    setEditing(company);
+    setForm(nextForm);
+    setInitialForm(nextForm);
     setShowModal(true);
   };
 
@@ -48,6 +55,7 @@ const Companies = () => {
     setShowModal(false);
     setEditing(null);
     setForm(empty);
+    setInitialForm(empty);
   };
 
   const handleChange = (e) => {
@@ -94,7 +102,7 @@ const Companies = () => {
           onClick={openAdd}
           className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-200 shadow-lg shadow-red-900/20"
         >
-          <FaPlus /> Add Company
+           Add Company
         </button>
       </div>
 
@@ -172,9 +180,16 @@ const Companies = () => {
             <button
               form="company-form"
               type="submit"
-              className="bg-[#00ab41] hover:bg-green-700 text-white py-3 px-12 rounded-lg font-bold transition-all duration-200 shadow-md transform active:scale-95"
+              disabled={isSubmitDisabled}
+              className="bg-[#00ab41] hover:bg-green-700 disabled:bg-green-400 disabled:cursor-not-allowed text-white py-3 px-12 rounded-lg font-bold transition-all duration-200 shadow-md transform active:scale-95"
             >
-              {editing ? "Update Company" : "Add Company"}
+              {isSubmitting
+                ? editing
+                  ? "Updating..."
+                  : "Adding..."
+                : editing
+                  ? "Update Company"
+                  : "Add Company"}
             </button>
           </div>
         }
@@ -233,15 +248,17 @@ const Companies = () => {
           <div className="flex gap-4 w-full">
             <button
               onClick={() => setShowDeleteModal(false)}
+              disabled={isDeletingCompany}
               className="flex-1 px-4 py-3 text-gray-600 bg-gray-100 rounded-xl hover:bg-gray-200 font-semibold transition-all"
             >
               Cancel
             </button>
             <button
               onClick={handleDelete}
-              className="flex-1 bg-red-600 hover:bg-red-700 text-white py-3 rounded-xl font-bold transition-all shadow-lg shadow-red-900/20"
+              disabled={isDeletingCompany}
+              className="flex-1 bg-red-600 hover:bg-red-700 disabled:bg-red-400 disabled:cursor-not-allowed text-white py-3 rounded-xl font-bold transition-all shadow-lg shadow-red-900/20"
             >
-              Confirm Delete
+              {isDeletingCompany ? "Deleting..." : "Confirm Delete"}
             </button>
           </div>
         }
