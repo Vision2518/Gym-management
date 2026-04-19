@@ -1,5 +1,4 @@
 import { Outlet, Navigate } from "react-router-dom";
-import VendorSidebar from "../components/VendorSidebar";
 
 const VendorLayout = () => {
   const isAuthenticated = !!localStorage.getItem("authToken");
@@ -9,11 +8,12 @@ const VendorLayout = () => {
   }
 
   return (
-    <div className="flex min-h-screen">
-      <VendorSidebar />
-      <main className="flex-1 bg-gray-100 p-6">
+    <div className="vendor-layout">
+      <header>Vendor Header</header>
+      <main>
         <Outlet />
       </main>
+      <footer>Vendor Footer</footer>
     </div>
   );
 };

@@ -1,8 +1,8 @@
 import { createBrowserRouter } from "react-router-dom";
 import { adminRoutes } from "./AdminRoutes";
-import { vendorRoutes } from "./VendorRoutes";
+import { vendorRoutes } from "../../../vendor/src/router/VendorRoutes";
 import AdminLayout from "../layout/AdminLayout";
-import VendorLayout from "../layout/VendorLayout.jsx";
+import VendorLayout from "../../../vendor/src/layout/VendorLayout";
 import Login from "../components/Login";
 import Guard from "./Guard";
 import ErrorPage from "../components/ErrorPage";
