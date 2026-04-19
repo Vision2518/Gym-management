@@ -4,6 +4,7 @@ import { toast } from "react-toastify";
 import Modal from "./shared/Modal";
 import Input from "./shared/Input";
 import { useGetSchedulesByCompanyQuery, useAddScheduleMutation, useUpdateScheduleMutation, useDeleteScheduleMutation } from "../redux/features/authSlice";
+import { getErrorMessage } from "../utils/toastMessage";
 
 const empty = { company_id: "", start_time: "", end_time: "" };
 
@@ -57,7 +58,7 @@ const Schedules = () => {
       setForm(empty);
       setInitialForm(empty);
     } catch (err) {
-      toast.error(err?.data?.message || "Operation failed");
+      toast.error(getErrorMessage(err, "Unable to save schedule details."));
     }
   };
 
@@ -72,7 +73,7 @@ const Schedules = () => {
       toast.success("Schedule deleted");
       setShowDeleteModal(false);
     } catch (err) {
-      toast.error(err?.data?.message || "Delete failed");
+      toast.error(getErrorMessage(err, "Unable to delete schedule."));
     }
   };
 
@@ -81,7 +82,7 @@ const Schedules = () => {
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-3xl font-bold text-white">Schedules</h1>
         <button onClick={openAdd} className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg transition-colors">
-          <FaPlus /> Add Schedule
+           Add Schedule
         </button>
       </div>
 
@@ -91,7 +92,7 @@ const Schedules = () => {
           : (
           <table className="w-full text-sm text-left text-white">
             <thead className="bg-white/10 text-purple-200 uppercase text-xs">
-              <tr>{["#", "Member", "Start Time", "End Time", "Actions"].map(h => <th key={h} className="px-6 py-4">{h}</th>)}</tr>
+              <tr>{["#", "Start Time", "End Time", "Actions"].map(h => <th key={h} className="px-6 py-4">{h}</th>)}</tr>
             </thead>
             <tbody>
               {schedules.length === 0
@@ -99,7 +100,6 @@ const Schedules = () => {
                 : schedules.map((s, i) => (
                   <tr key={s.id} className="border-t border-white/10 hover:bg-white/5 transition-colors">
                     <td className="px-6 py-4">{i + 1}</td>
-                    <td className="px-6 py-4 font-medium">{s.full_name || "-"}</td>
                     <td className="px-6 py-4">{s.start_time}</td>
                     <td className="px-6 py-4">{s.end_time}</td>
                     <td className="px-6 py-4 flex gap-3">
@@ -113,9 +113,12 @@ const Schedules = () => {
         )}
       </div>
 
-      <Modal show={showModal} title={editing ? "Edit Schedule" : "Add Schedule"} onClose={() => { setShowModal(false); setEditing(null); setForm(empty); setInitialForm(empty); }} onSubmit={handleSubmit} submitLabel={editing ? "Update" : "Add Schedule"} submitLoadingLabel={editing ? "Updating..." : "Adding..."} isSubmitting={isSubmitDisabled}>
-        <Input label="Start Time" name="start_time" type="time" value={form.start_time} onChange={handleChange} required />
-        <Input label="End Time" name="end_time" type="time" value={form.end_time} onChange={handleChange} required />
+      <Modal show={showModal} title={editing ? "Edit Schedule" : "Add Schedule"} onClose={() => { setShowModal(false); setEditing(null); setForm(empty); setInitialForm(empty); }} onSubmit={handleSubmit} submitLabel={editing ? "Update" : "Add Schedule"} submitLoadingLabel={editing ? "Updating..." : "Adding..."} isSubmitting={isSubmitDisabled} size="4xl">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <Input label="Company ID" name="company_id" type="number" value={form.company_id} onChange={handleChange} required />
+          <Input label="Start Time" name="start_time" type="time" value={form.start_time} onChange={handleChange} required />
+          <Input label="End Time" name="end_time" type="time" value={form.end_time} onChange={handleChange} required />
+        </div>
       </Modal>
 
       <Modal

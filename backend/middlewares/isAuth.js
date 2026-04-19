@@ -4,7 +4,7 @@ const authorizeRoles = (...roles) => {
 
     if (!user) {
       return res.status(401).json({
-        message: "User not authenticated",
+        message: "Please log in to continue.",
       });
     }
 
@@ -12,7 +12,7 @@ const authorizeRoles = (...roles) => {
 
     if (!roles.includes(role)) {
       return res.status(403).json({
-        message: "Unauthorized access",
+        message: "You do not have permission to perform this action.",
       });
     }
 

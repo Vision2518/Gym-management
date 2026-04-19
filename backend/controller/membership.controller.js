@@ -27,7 +27,7 @@ export const addMember = async (req, res) => {
       return res.status(400).json({
         success: false,
         message:
-          "company_id,plan_id,schedule_id,full_name, phone and join_date are required",
+          "Company, plan, schedule, full name, phone number, and join date are required.",
       });
     }
     const [existingMember] = await db.query(
@@ -35,7 +35,17 @@ export const addMember = async (req, res) => {
       [email, phone],
     );
     if (existingMember.length > 0) {
-      return res.status(200).json({ message: "member exists" });
+      return res.status(200).json({ message: "A member with the same email and phone number already exists." });
+    }
+    const [existingPhone] = await db.query(
+      "SELECT phone FROM members WHERE phone = ?",
+      [phone],
+    );
+    if (existingPhone.length > 0) {
+      return res.status(400).json({
+        success: false,
+        message: "This phone number is already in use.",
+      });
     }
     const query = `
       INSERT INTO members
@@ -59,15 +69,14 @@ export const addMember = async (req, res) => {
 
     res.status(201).json({
       success: true,
-      message: "Member added successfully",
+      message: "Member added successfully.",
       memberId: result.insertId,
     });
   } catch (error) {
     console.error("Add Member Error:", error);
     res.status(500).json({
       success: false,
-      message: "Failed to add member",
-      error: error.message,
+      message: "Unable to add the member right now. Please try again later.",
     });
   }
 };
@@ -100,7 +109,7 @@ export const getMemberById = async (req, res) => {
     if (member.length === 0) {
       return res.status(404).json({
         success: false,
-        message: "Member not found",
+        message: "Member not found.",
       });
     }
 
@@ -112,8 +121,7 @@ export const getMemberById = async (req, res) => {
     console.error("Get Member By ID Error:", error);
     res.status(500).json({
       success: false,
-      message: "Failed to fetch member",
-      error: error.message,
+      message: "Unable to fetch member details right now. Please try again later.",
     });
   }
 };
@@ -124,7 +132,7 @@ export const getMembersByCompany = async (req, res) => {
     if (!company_id) {
       return res.status(400).json({
         success: false,
-        message: "company_id not found in authenticated vendor token",
+        message: "Unable to identify your company. Please log in again.",
       });
     }
 
@@ -142,8 +150,7 @@ export const getMembersByCompany = async (req, res) => {
     console.error("Get Members By Company Error:", error);
     res.status(500).json({
       success: false,
-      message: "Failed to fetch company members",
-      error: error.message,
+      message: "Unable to fetch members right now. Please try again later.",
     });
   }
 };
@@ -152,12 +159,12 @@ export const deleteMember = async (req, res) => {
     const { id } = req.params;
     const [rows] = await db.execute("SELECT *FROM members WHERE id=?", [id]);
     if (rows.length === 0) {
-      return res.status(404).json({ message: "member not exist" });
+      return res.status(404).json({ message: "Member not found." });
     }
     await db.execute("DELETE FROM members WHERE id=?", [id]);
-    res.status(200).json({ message: "member deleted!" });
+    res.status(200).json({ message: "Member deleted successfully." });
   } catch (error) {
-    res.status(500).json({ message: "failed to delete", error: error.message });
+    res.status(500).json({ message: "Unable to delete the member right now. Please try again later." });
   }
 };
 export const updateMember = async (req, res, next) => {
@@ -184,7 +191,7 @@ export const updateMember = async (req, res, next) => {
     if (existing.length === 0) {
       return res.status(404).json({
         success: false,
-        message: `Member not found with id ${id}`,
+          message: "Member not found.",
       });
     }
 
@@ -211,7 +218,7 @@ export const updateMember = async (req, res, next) => {
       if (plan.length === 0) {
         return res.status(404).json({
           success: false,
-          message: `Membership plan not found with id ${plan_id}`,
+          message: "Selected membership plan was not found.",
         });
       }
     }
@@ -244,15 +251,14 @@ export const updateMember = async (req, res, next) => {
 
     res.status(200).json({
       success: true,
-      message: "Member updated successfully",
+      message: "Member updated successfully.",
       member: updatedMember[0],
     });
   } catch (error) {
     console.error("Update Member Error:", error);
     res.status(500).json({
       success: false,
-      message: "Failed to update member",
-      error: error.message,
+      message: "Unable to update the member right now. Please try again later.",
     });
   }
 };
@@ -263,7 +269,7 @@ export const addMemberSchedule = async (req, res) => {
     if (!company_id || !start_time || !end_time) {
       return res.status(400).json({
         success: false,
-        message: "company_id, member_id, start_time and end_time are required",
+        message: "Company, start time, and end time are required.",
       });
     }
 
@@ -275,15 +281,14 @@ export const addMemberSchedule = async (req, res) => {
 
     res.status(201).json({
       success: true,
-      message: "Member schedule added successfully",
+      message: "Schedule added successfully.",
       scheduleId: result.insertId,
     });
   } catch (error) {
     console.error("Add Member Schedule Error:", error);
     res.status(500).json({
       success: false,
-      message: "Failed to add member schedule",
-      error: error.message,
+      message: "Unable to add the schedule right now. Please try again later.",
     });
   }
 };
@@ -300,8 +305,7 @@ export const getAllMemberSchedules = async (req, res) => {
     console.error("Get All Member Schedules Error:", error);
     res.status(500).json({
       success: false,
-      message: "Failed to fetch member schedules",
-      error: error.message,
+      message: "Unable to fetch schedules right now. Please try again later.",
     });
   }
 };
@@ -313,14 +317,14 @@ export const deleteSchedule = async (req, res) => {
       [id],
     );
     if (rows.length === 0) {
-      return res.status(404).json({ message: "schedule does not exist" });
+      return res.status(404).json({ message: "Schedule not found." });
     }
     await db.execute("DELETE FROM member_schedules WHERE id=?", [id]);
-    return res.status(200).json({ message: "schedule deleted successfully" });
+    return res.status(200).json({ message: "Schedule deleted successfully." });
   } catch (error) {
     return res
       .status(500)
-      .json({ message: "failed to delete schedule", error: error.message });
+      .json({ message: "Unable to delete the schedule right now. Please try again later." });
   }
 };
 export const updateSchedule = async (req, res) => {
@@ -331,7 +335,7 @@ export const updateSchedule = async (req, res) => {
     if (!company_id || !start_time || !end_time) {
       return res.status(400).json({
         success: false,
-        message: "company_id, start_time and end_time are required",
+        message: "Company, start time, and end time are required.",
       });
     }
 
@@ -344,7 +348,7 @@ export const updateSchedule = async (req, res) => {
     if (existing.length === 0) {
       return res.status(404).json({
         success: false,
-        message: "Member schedule not found",
+        message: "Schedule not found.",
       });
     }
 
@@ -358,14 +362,13 @@ export const updateSchedule = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      message: "Member schedule updated successfully",
+      message: "Schedule updated successfully.",
     });
   } catch (error) {
     console.error("Update Member Schedule Error:", error);
     res.status(500).json({
       success: false,
-      message: "Failed to update member schedule",
-      error: error.message,
+      message: "Unable to update the schedule right now. Please try again later.",
     });
   }
 };
@@ -399,7 +402,7 @@ export const getSchedulesByCompany = async (req, res) => {
     if (!company_id) {
       return res.status(400).json({
         success: false,
-        message: "company_id not found in authenticated vendor token",
+        message: "Unable to identify your company. Please log in again.",
       });
     }
 
@@ -426,8 +429,7 @@ export const getSchedulesByCompany = async (req, res) => {
     console.error("Get Schedules By Company Error:", error);
     res.status(500).json({
       success: false,
-      message: "Failed to fetch company schedules",
-      error: error.message,
+      message: "Unable to fetch schedules right now. Please try again later.",
     });
   }
 };

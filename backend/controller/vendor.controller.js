@@ -8,7 +8,7 @@ export const loginVendor = async (req, res) => {
     if (!email || !password) {
       return res
         .status(400)
-        .json({ message: "Email and password are required" });
+        .json({ message: "Email and password are required." });
     }
 
     // 1. Check if vendor exists
@@ -21,13 +21,13 @@ export const loginVendor = async (req, res) => {
     );
 
     if (rows.length === 0) {
-      return res.status(404).json({ message: "Vendor not found" });
+      return res.status(404).json({ message: "No account was found with this email address." });
     }
     const vendor = rows[0];
     // 2. Compare password
     const isMatch = await bcrypt.compare(password, vendor.password);
     if (!isMatch) {
-      return res.status(401).json({ message: "Invalid credentials" });
+      return res.status(401).json({ message: "Incorrect email or password." });
     }
     // 3. Generate token
     const token = jwt.sign(
@@ -52,7 +52,7 @@ export const loginVendor = async (req, res) => {
 
     // 5. Response
     res.json({
-      message: "Vendor login successful",
+      message: "Login successful.",
       token,
       vendor: {
         id: vendor.id,
@@ -64,7 +64,7 @@ export const loginVendor = async (req, res) => {
       },
     });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ message: "Unable to log in right now. Please try again later." });
   }
 };
 export const addMemberPlan = async (req, res) => {
@@ -73,7 +73,7 @@ export const addMemberPlan = async (req, res) => {
     console.log(req.body);
     if ( !company_id || !name || !duration || !price) {
       return res.status(400).json({
-        message: "All feild are required",
+        message: "Please fill in all required fields.",
       });
     }
     const [existingPlan] = await db.query(
@@ -82,7 +82,7 @@ export const addMemberPlan = async (req, res) => {
     );
     if (existingPlan.length > 0) {
       return res.status(403).json({
-        message: "Plan exists",
+        message: "A plan with this name already exists.",
       });
     }
     await db.query(
@@ -90,13 +90,12 @@ export const addMemberPlan = async (req, res) => {
       [company_id, name, duration, price],
     );
     res.status(201).json({
-      message: "plan added sucessfully",
+      message: "Plan added successfully.",
     });
   } catch (error) {
     console.log("membership add error", error);
     res.status(500).json({
-      message: "server error",
-      error: error.message,
+      message: "Unable to add the plan right now. Please try again later.",
     });
   }
 };
@@ -122,8 +121,7 @@ export const getAllPlan = async (req, res) => {
     console.error("GetAllPlan Error:", error);
     res.status(500).json({
       success: false,
-      message: "server error",
-      error: error.message,
+      message: "Unable to fetch plans right now. Please try again later.",
     });
   }
 };
@@ -154,8 +152,7 @@ export const getPlanByCompany = async (req, res) => {
     console.log("Get plan by company error:", error);
     res.status(500).json({
       success: false,
-      message: "server error",
-      error: error.message,
+      message: "Unable to fetch plans right now. Please try again later.",
     });
   }
 };
@@ -167,14 +164,14 @@ export const deletePlan = async (req, res) => {
       [id],
     );
     if (rows.length === 0) {
-      return res.status(404).json({ message: "plan not found" });
+      return res.status(404).json({ message: "Plan not found." });
     }
     await db.execute("DELETE FROM membership_plans WHERE id=?", [id]);
-    return res.status(200).json({ message: "plan deleted sucessfully" });
+    return res.status(200).json({ message: "Plan deleted successfully." });
   } catch (error) {
     return res
       .status(500)
-      .json({ message: "failed to delete", error: error.message });
+      .json({ message: "Unable to delete the plan right now. Please try again later." });
   }
 };
 export const updatePlan = async (req, res) => {
@@ -190,7 +187,7 @@ export const updatePlan = async (req, res) => {
       price === undefined
     ) {
       return res.status(400).json({
-        message: "At least one field is required to update",
+        message: "Please change at least one field before updating.",
       });
     }
 
@@ -202,7 +199,7 @@ export const updatePlan = async (req, res) => {
 
     if (existingPlan.length === 0) {
       return res.status(404).json({
-        message: "Plan not found",
+        message: "Plan not found.",
       });
     }
 
@@ -225,7 +222,7 @@ export const updatePlan = async (req, res) => {
 
       if (planExists.length > 0) {
         return res.status(400).json({
-          message: "Plan name already exists for this company",
+          message: "A plan with this name already exists for this company.",
         });
       }
     }
@@ -239,13 +236,12 @@ export const updatePlan = async (req, res) => {
     );
 
     return res.status(200).json({
-      message: "Plan updated successfully",
+      message: "Plan updated successfully.",
     });
   } catch (error) {
     console.log("Update Plan Error:", error);
     return res.status(500).json({
-      message: "Failed to update plan",
-      error: error.message,
+      message: "Unable to update the plan right now. Please try again later.",
     });
   }
 };
@@ -295,8 +291,7 @@ export const getVendorStats = async (req, res) => {
   } catch (error) {
     console.log("Get Vendor Stats Error:", error);
     res.status(500).json({
-      message: "Server error",
-      error: error.message,
+      message: "Unable to load dashboard data right now. Please try again later.",
     });
   }
 };

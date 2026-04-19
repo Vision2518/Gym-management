@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { FaPlus, FaEdit, FaTrash } from "react-icons/fa";
+import { FaPlus, FaEdit, FaTrash, FaEye } from "react-icons/fa";
 import { toast } from "react-toastify";
 import Modal from "./shared/Modal";
 import Input from "./shared/Input";
+import { getErrorMessage } from "../utils/toastMessage";
 import {
   useGetMembersByCompanyQuery,
   useAddMemberMutation,
@@ -13,6 +14,18 @@ import { useGetSchedulesByCompanyQuery, useGetPlansByCompanyQuery } from "../red
 
 const empty = { full_name: "", phone: "", email: "", gender: "", age: "", address: "", join_date: "", status: "active", plan_id: "", schedule_id: "", company_id: "" };
 
+const getVendorCompanyId = () => {
+  const token = localStorage.getItem("authToken");
+  if (!token) return "";
+
+  try {
+    const decoded = JSON.parse(atob(token.split(".")[1]));
+    return decoded.company_id || "";
+  } catch {
+    return "";
+  }
+};
+
 const Members = () => {
   const { data, isLoading, isError } = useGetMembersByCompanyQuery();
   const { data: schedulesData } = useGetSchedulesByCompanyQuery();
@@ -22,8 +35,10 @@ const Members = () => {
   const [deleteMember, { isLoading: isDeletingMember }] = useDeleteMemberMutation();
 
   const [showModal, setShowModal] = useState(false);
+  const [showViewModal, setShowViewModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [editing, setEditing] = useState(null);
+  const [viewingMember, setViewingMember] = useState(null);
   const [deletingMember, setDeletingMember] = useState(null);
   const [form, setForm] = useState(empty);
   const [initialForm, setInitialForm] = useState(empty);
@@ -35,7 +50,13 @@ const Members = () => {
   const isDirty = JSON.stringify(form) !== JSON.stringify(initialForm);
   const isSubmitDisabled = isSubmitting || (editing && !isDirty);
 
-  const openAdd = () => { setEditing(null); setForm(empty); setInitialForm(empty); setShowModal(true); };
+  const openAdd = () => {
+    const nextForm = { ...empty, company_id: getVendorCompanyId() };
+    setEditing(null);
+    setForm(nextForm);
+    setInitialForm(nextForm);
+    setShowModal(true);
+  };
   const openEdit = (m) => {
     const nextForm = { full_name: m.full_name, phone: m.phone, email: m.email || "", gender: m.gender || "", age: m.age || "", address: m.address || "", join_date: m.join_date?.split("T")[0] || "", status: m.status, plan_id: m.plan_id, schedule_id: m.schedule_id, company_id: m.company_id };
     setEditing(m);
@@ -53,7 +74,7 @@ const Members = () => {
         await updateMember({ id: editing.id, ...form }).unwrap();
         toast.success("Member updated");
       } else {
-        await addMember(form).unwrap();
+        await addMember({ ...form, company_id: form.company_id || getVendorCompanyId() }).unwrap();
         toast.success("Member added");
       }
       setShowModal(false);
@@ -61,7 +82,7 @@ const Members = () => {
       setForm(empty);
       setInitialForm(empty);
     } catch (err) {
-      toast.error(err?.data?.message || "Operation failed");
+      toast.error(getErrorMessage(err, "Unable to save member details."));
     }
   };
 
@@ -76,16 +97,28 @@ const Members = () => {
       toast.success("Member deleted");
       setShowDeleteModal(false);
     } catch (err) {
-      toast.error(err?.data?.message || "Delete failed");
+      toast.error(getErrorMessage(err, "Unable to delete member."));
     }
   };
+
+  const openView = (member) => {
+    setViewingMember(member);
+    setShowViewModal(true);
+  };
+
+  const selectedViewPlan = plans.find(
+    (plan) => String(plan.id) === String(viewingMember?.plan_id),
+  );
+  const selectedViewSchedule = schedules.find(
+    (schedule) => String(schedule.id) === String(viewingMember?.schedule_id),
+  );
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-950 to-slate-900 p-8">
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-3xl font-bold text-white">Members</h1>
         <button onClick={openAdd} className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg transition-colors">
-          <FaPlus /> Add Member
+         Add Member
         </button>
       </div>
 
@@ -109,6 +142,7 @@ const Members = () => {
                     <td className="px-6 py-4">{m.gender || "-"}</td>
                     <td className="px-6 py-4"><span className={`px-2 py-1 rounded-full text-xs ${m.status === "active" ? "bg-green-600" : "bg-red-600"}`}>{m.status}</span></td>
                     <td className="px-6 py-4 flex gap-3">
+                      <button onClick={() => openView(m)} className="text-blue-400 hover:text-blue-300"><FaEye size={16} /></button>
                       <button onClick={() => openEdit(m)} className="text-yellow-400 hover:text-yellow-300"><FaEdit size={16} /></button>
                       <button onClick={() => openDelete(m)} disabled={isDeletingMember} className="text-red-400 hover:text-red-300 disabled:text-red-200 disabled:cursor-not-allowed"><FaTrash size={16} /></button>
                     </td>
@@ -119,14 +153,13 @@ const Members = () => {
         )}
       </div>
 
-      <Modal show={showModal} title={editing ? "Edit Member" : "Add Member"} onClose={() => { setShowModal(false); setEditing(null); setForm(empty); setInitialForm(empty); }} onSubmit={handleSubmit} submitLabel={editing ? "Update" : "Add Member"} submitLoadingLabel={editing ? "Updating..." : "Adding..."} isSubmitting={isSubmitDisabled} size="lg">
-        <div className="grid grid-cols-2 gap-4">
+      <Modal show={showModal} title={editing ? "Edit Member" : "Add Member"} onClose={() => { setShowModal(false); setEditing(null); setForm(empty); setInitialForm(empty); }} onSubmit={handleSubmit} submitLabel={editing ? "Update" : "Add Member"} submitLoadingLabel={editing ? "Updating..." : "Adding..."} isSubmitting={isSubmitDisabled} size="4xl">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Input label="Full Name" name="full_name" placeholder="Full Name" value={form.full_name} onChange={handleChange} required />
           <Input label="Phone" name="phone" placeholder="Phone" value={form.phone} onChange={handleChange} required />
           <Input label="Email" name="email" type="email" placeholder="Email" value={form.email} onChange={handleChange} />
           <Input label="Age" name="age" placeholder="Age" value={form.age} onChange={handleChange} />
           <Input label="Join Date" name="join_date" type="date" value={form.join_date} onChange={handleChange} required />
-          <Input label="Company ID" name="company_id" type="number" placeholder="Company ID" value={form.company_id} onChange={handleChange} required />
           <label className="flex flex-col text-left">
             <span>Gender</span>
             <select name="gender" value={form.gender} onChange={handleChange} className="border p-2 rounded">
@@ -134,13 +167,6 @@ const Members = () => {
               <option value="male">Male</option>
               <option value="female">Female</option>
               <option value="other">Other</option>
-            </select>
-          </label>
-          <label className="flex flex-col text-left">
-            <span>Status</span>
-            <select name="status" value={form.status} onChange={handleChange} className="border p-2 rounded">
-              <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
             </select>
           </label>
           <label className="flex flex-col text-left">
@@ -158,7 +184,78 @@ const Members = () => {
             </select>
           </label>
         </div>
-        <Input label="Address" name="address" placeholder="Address" value={form.address} onChange={handleChange} />
+        <div className="md:col-span-3">
+          <Input label="Address" name="address" placeholder="Address" value={form.address} onChange={handleChange} />
+        </div>
+      </Modal>
+
+      <Modal
+        show={showViewModal}
+        onClose={() => {
+          setShowViewModal(false);
+          setViewingMember(null);
+        }}
+        title="Member Details"
+        size="4xl"
+        footerContent={
+          <button
+            type="button"
+            onClick={() => {
+              setShowViewModal(false);
+              setViewingMember(null);
+            }}
+            className="w-full bg-purple-600 hover:bg-purple-700 text-white py-3 rounded-lg font-semibold transition-colors"
+          >
+            Close
+          </button>
+        }
+      >
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="space-y-1">
+            <p className="text-sm font-medium text-gray-500">Full Name</p>
+            <p className="text-base font-semibold text-gray-900">{viewingMember?.full_name || "-"}</p>
+          </div>
+          <div className="space-y-1">
+            <p className="text-sm font-medium text-gray-500">Phone</p>
+            <p className="text-base font-semibold text-gray-900">{viewingMember?.phone || "-"}</p>
+          </div>
+          <div className="space-y-1">
+            <p className="text-sm font-medium text-gray-500">Email</p>
+            <p className="text-base font-semibold text-gray-900">{viewingMember?.email || "-"}</p>
+          </div>
+          <div className="space-y-1">
+            <p className="text-sm font-medium text-gray-500">Age</p>
+            <p className="text-base font-semibold text-gray-900">{viewingMember?.age || "-"}</p>
+          </div>
+          <div className="space-y-1">
+            <p className="text-sm font-medium text-gray-500">Gender</p>
+            <p className="text-base font-semibold text-gray-900">{viewingMember?.gender || "-"}</p>
+          </div>
+          <div className="space-y-1">
+            <p className="text-sm font-medium text-gray-500">Join Date</p>
+            <p className="text-base font-semibold text-gray-900">{viewingMember?.join_date?.split("T")[0] || "-"}</p>
+          </div>
+          <div className="space-y-1">
+            <p className="text-sm font-medium text-gray-500">Status</p>
+            <p className="text-base font-semibold text-gray-900 capitalize">{viewingMember?.status || "-"}</p>
+          </div>
+          <div className="space-y-1">
+            <p className="text-sm font-medium text-gray-500">Plan</p>
+            <p className="text-base font-semibold text-gray-900">{selectedViewPlan?.plan_name || "-"}</p>
+          </div>
+          <div className="space-y-1">
+            <p className="text-sm font-medium text-gray-500">Schedule</p>
+            <p className="text-base font-semibold text-gray-900">
+              {selectedViewSchedule
+                ? `${selectedViewSchedule.start_time} - ${selectedViewSchedule.end_time}`
+                : "-"}
+            </p>
+          </div>
+        </div>
+        <div className="space-y-1 pt-2">
+          <p className="text-sm font-medium text-gray-500">Address</p>
+          <p className="text-base font-semibold text-gray-900">{viewingMember?.address || "-"}</p>
+        </div>
       </Modal>
 
       <Modal

@@ -17,7 +17,7 @@ export const addPayment = async (req, res) => {
       return res.status(400).json({
         success: false,
         message:
-          "member_id, plan_id, paid_amount, and payment_method are required",
+          "Member, plan, paid amount, and payment method are required.",
       });
     }
 
@@ -29,7 +29,7 @@ export const addPayment = async (req, res) => {
     if (member.length === 0) {
       return res.status(404).json({
         success: false,
-        message: `Member not found with id ${member_id}`,
+        message: "Selected member was not found.",
       });
     }
 
@@ -42,7 +42,7 @@ export const addPayment = async (req, res) => {
     if (plan.length === 0) {
       return res.status(404).json({
         success: false,
-        message: `Membership plan not found with id ${plan_id}`,
+        message: "Selected membership plan was not found.",
       });
     }
 
@@ -53,14 +53,14 @@ export const addPayment = async (req, res) => {
     if (isNaN(finalPaidAmount)) {
       return res.status(400).json({
         success: false,
-        message: "Paid amount must be a valid number",
+        message: "Please enter a valid paid amount.",
       });
     }
 
     if (finalPaidAmount <= 0) {
       return res.status(400).json({
         success: false,
-        message: "Paid amount must be greater than 0",
+        message: "Paid amount must be greater than 0.",
       });
     }
 
@@ -96,7 +96,7 @@ export const addPayment = async (req, res) => {
       if (isNaN(finalDiscount)) {
         return res.status(400).json({
           success: false,
-          message: "Discount must be a valid number",
+          message: "Please enter a valid discount amount.",
         });
       }
     } else {
@@ -107,7 +107,7 @@ export const addPayment = async (req, res) => {
       if (discount != null && Number(discount) !== finalDiscount) {
         return res.status(400).json({
           success: false,
-          message: `Discount is already fixed at ${finalDiscount} for this member and plan. It cannot be changed in later installments.`,
+          message: `The discount for this member and plan is fixed at ${finalDiscount}. It cannot be changed in later installments.`,
         });
       }
     }
@@ -116,14 +116,14 @@ export const addPayment = async (req, res) => {
     if (finalDiscount < 0) {
       return res.status(400).json({
         success: false,
-        message: "Discount cannot be negative",
+        message: "Discount cannot be negative.",
       });
     }
 
     if (finalDiscount > planPrice) {
       return res.status(400).json({
         success: false,
-        message: "Discount cannot be greater than plan price",
+        message: "Discount cannot be greater than the plan price.",
       });
     }
 
@@ -136,7 +136,7 @@ export const addPayment = async (req, res) => {
     if (totalAfterThisPayment > payableAmount) {
       return res.status(400).json({
         success: false,
-        message: `Payment exceeds payable amount. Already paid ${totalPreviousPaid}, payable amount is ${payableAmount}`,
+          message: `This payment is too high. Already paid: ${totalPreviousPaid}. Total payable amount: ${payableAmount}.`,
       });
     }
 
@@ -164,8 +164,8 @@ export const addPayment = async (req, res) => {
       success: true,
       message:
         paymentCount === 0
-          ? "First payment added successfully"
-          : "Installment payment added successfully",
+          ? "Payment added successfully."
+          : "Installment payment added successfully.",
       payment: newPayment[0],
       summary: {
         plan_price: planPrice,
@@ -185,8 +185,7 @@ export const addPayment = async (req, res) => {
     console.error("Add Payment Error:", error);
     res.status(500).json({
       success: false,
-      message: "Failed to add payment",
-      error: error.message,
+      message: "Unable to add the payment right now. Please try again later.",
     });
   }
 };
@@ -207,15 +206,14 @@ export const getAllPayments = async (req, res) => {
     if (payments.length === 0) {
       return res
         .status(404)
-        .json({ success: false, message: "No payments found" });
+        .json({ success: false, message: "No payments found." });
     }
     return res.status(200).json({ success: true, payments });
   } catch (error) {
     console.error("Get All Payments Error:", error);
     return res.status(500).json({
       success: false,
-      message: "Failed to fetch payments",
-      error: error.message,
+      message: "Unable to fetch payments right now. Please try again later.",
     });
   }
 };
@@ -237,7 +235,7 @@ export const getPaymentsByMemberId = async (req, res) => {
     if (payments.length === 0) {
       return res.status(404).json({
         success: false,
-        message: `No payments found for member_id ${member_id}`,
+        message: "No payments were found for this member.",
       });
     }
 
@@ -246,8 +244,7 @@ export const getPaymentsByMemberId = async (req, res) => {
     console.error("Get Payments By Member ID Error:", error);
     res.status(500).json({
       success: false,
-      message: "Failed to fetch payments",
-      error: error.message,
+      message: "Unable to fetch payments right now. Please try again later.",
     });
   }
 };
@@ -271,7 +268,7 @@ export const updatePayment = async (req, res) => {
     if (existing.length === 0) {
       return res.status(404).json({
         success: false,
-        message: `Payment not found with id ${id}`,
+        message: "Payment not found.",
       });
     }
 
@@ -289,14 +286,14 @@ export const updatePayment = async (req, res) => {
     if (updatedDiscount < 0) {
       return res.status(400).json({
         success: false,
-        message: "Discount cannot be negative",
+        message: "Discount cannot be negative.",
       });
     }
 
     if (updatedPaidAmount <= 0) {
       return res.status(400).json({
         success: false,
-        message: "Paid amount must be greater than 0",
+        message: "Paid amount must be greater than 0.",
       });
     }
 
@@ -308,7 +305,7 @@ export const updatePayment = async (req, res) => {
     if (member.length === 0) {
       return res.status(404).json({
         success: false,
-        message: `Member not found with id ${updatedMemberId}`,
+        message: "Selected member was not found.",
       });
     }
 
@@ -321,7 +318,7 @@ export const updatePayment = async (req, res) => {
     if (plan.length === 0) {
       return res.status(404).json({
         success: false,
-        message: `Plan not found with id ${updatedPlanId}`,
+        message: "Selected plan was not found.",
       });
     }
 
@@ -331,7 +328,7 @@ export const updatePayment = async (req, res) => {
     if (updatedDiscount > planPrice) {
       return res.status(400).json({
         success: false,
-        message: "Discount cannot be greater than plan price",
+        message: "Discount cannot be greater than the plan price.",
       });
     }
 
@@ -351,7 +348,7 @@ export const updatePayment = async (req, res) => {
     if (totalOtherPaid + updatedPaidAmount > payableAmount) {
       return res.status(400).json({
         success: false,
-        message: `Payment exceeds remaining amount. Remaining allowed: ${payableAmount - totalOtherPaid}`,
+        message: `This payment is too high. Remaining amount allowed: ${payableAmount - totalOtherPaid}.`,
       });
     }
 
@@ -370,7 +367,7 @@ export const updatePayment = async (req, res) => {
       if (updatedDiscount !== previousDiscount) {
         return res.status(400).json({
           success: false,
-          message: `Discount must remain same for same member and plan. Existing discount is ${previousDiscount}`,
+          message: `Discount must stay the same for this member and plan. Current discount: ${previousDiscount}.`,
         });
       }
     }
@@ -414,7 +411,7 @@ export const updatePayment = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      message: "Payment updated successfully",
+      message: "Payment updated successfully.",
       payment: updatedPayment[0],
       summary: {
         plan_price: planPrice,
@@ -429,8 +426,7 @@ export const updatePayment = async (req, res) => {
     console.error("Update Payment Error:", error);
     res.status(500).json({
       success: false,
-      message: "Failed to update payment",
-      error: error.message,
+      message: "Unable to update the payment right now. Please try again later.",
     });
   }
 };
@@ -446,7 +442,7 @@ export const deletePayment = async (req, res) => {
     if (existing.length === 0) {
       return res.status(404).json({
         success: false,
-        message: `Payment not found with id ${id}`,
+        message: "Payment not found.",
       });
     }
 
@@ -455,14 +451,13 @@ export const deletePayment = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      message: "Payment deleted successfully",
+      message: "Payment deleted successfully.",
     });
   } catch (error) {
     console.error("Delete Payment Error:", error);
     res.status(500).json({
       success: false,
-      message: "Failed to delete payment",
-      error: error.message,
+      message: "Unable to delete the payment right now. Please try again later.",
     });
   }
 };
@@ -531,7 +526,7 @@ export const getPaymentHistoryByMemberId = async (req, res) => {
     if (!member_id) {
       return res.status(400).json({
         success: false,
-        message: "member_id is required",
+        message: "Member is required.",
       });
     }
 
@@ -543,7 +538,7 @@ export const getPaymentHistoryByMemberId = async (req, res) => {
     if (member.length === 0) {
       return res.status(404).json({
         success: false,
-        message: `Member not found with id ${member_id}`,
+        message: "Selected member was not found.",
       });
     }
 
@@ -571,7 +566,7 @@ export const getPaymentHistoryByMemberId = async (req, res) => {
     if (payments.length === 0) {
       return res.status(200).json({
         success: true,
-        message: "No payment history found for this member",
+        message: "No payment history was found for this member.",
         member: member[0],
         payments: [],
       });
@@ -619,7 +614,7 @@ export const getPaymentHistoryByMemberId = async (req, res) => {
     // 7. Response
     res.status(200).json({
       success: true,
-      message: "Payment history fetched successfully",
+      message: "Payment history fetched successfully.",
       member: member[0],
       payment_history: paymentHistory,
     });
@@ -627,8 +622,7 @@ export const getPaymentHistoryByMemberId = async (req, res) => {
     console.error("Get Payment History Error:", error);
     res.status(500).json({
       success: false,
-      message: "Failed to fetch payment history",
-      error: error.message,
+      message: "Unable to fetch payment history right now. Please try again later.",
     });
   }
 };

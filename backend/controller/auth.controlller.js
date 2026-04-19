@@ -7,7 +7,7 @@ export const loginAdmin = async (req, res) => {
     if (!email || !password) {
       return res
         .status(400)
-        .json({ message: "email and password are required" });
+        .json({ message: "Email and password are required." });
     }
 
     // 1. check user exists
@@ -17,7 +17,7 @@ export const loginAdmin = async (req, res) => {
     );
 
     if (rows.length === 0) {
-      return res.status(404).json({ message: "User not found" });
+      return res.status(404).json({ message: "No account was found with this email address." });
     }
 
     const admin = rows[0];
@@ -26,7 +26,7 @@ export const loginAdmin = async (req, res) => {
     const isMatch = await bcrypt.compare(password, admin.password);
 
     if (!isMatch) {
-      return res.status(401).json({ message: "Invalid credentials" });
+      return res.status(401).json({ message: "Incorrect email or password." });
     }
 
     // 3. token generate
@@ -42,19 +42,19 @@ export const loginAdmin = async (req, res) => {
     });
 
     res.json({
-      message: "Login successful",
+      message: "Login successful.",
       token,
     });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ message: "Unable to log in right now. Please try again later." });
   }
 };
 export const signout = async (req, res) => {
   try {
     res.clearCookie("token");
-    res.status(200).json({ message: "signout successful" });
+    res.status(200).json({ message: "You have been signed out successfully." });
   } catch (error) {
-    res.status(400).json({ message: "server error", error });
+    res.status(400).json({ message: "Unable to sign out right now. Please try again." });
   }
 };
 export const addVendor = async (req, res) => {
@@ -63,7 +63,7 @@ export const addVendor = async (req, res) => {
 
     if (!company_id || !username || !email || !password) {
       return res.status(400).json({
-        message: "company_id, username, email and password are required",
+        message: "Company, username, email, and password are required.",
       });
     }
     const [existingVendor] = await db.query(
@@ -73,14 +73,23 @@ export const addVendor = async (req, res) => {
     if (existingVendor.length > 0) {
       return res
         .status(400)
-        .json({ message: "Vendor username already exists" });
+        .json({ message: "This vendor username is already in use." });
     }
     const [existingEmail] = await db.query(
       "SELECT email FROM vendors WHERE email = ?",
       [email],
     );
     if (existingEmail.length > 0) {
-      return res.status(400).json({ message: "Email already exists" });
+      return res.status(400).json({ message: "This email address is already in use." });
+    }
+    if (number) {
+      const [existingNumber] = await db.query(
+        "SELECT number FROM vendors WHERE number = ?",
+        [number],
+      );
+      if (existingNumber.length > 0) {
+        return res.status(400).json({ message: "This phone number is already in use." });
+      }
     }
     const hashedPassword = await bcrypt.hash(password, 10);
     await db.query(
@@ -88,13 +97,12 @@ export const addVendor = async (req, res) => {
       [company_id, username, email, hashedPassword, number || null],
     );
     res.status(201).json({
-      message: "Vendor added successfully",
+      message: "Vendor added successfully.",
     });
   } catch (error) {
     console.log("Add Vendor Error:", error);
     res.status(500).json({
-      message: "Server error",
-      error: error.message,
+      message: "Unable to add the vendor right now. Please try again later.",
     });
   }
 };
@@ -102,7 +110,7 @@ export const getAllVendor = async (req, res) => {
   try {
     const [vendor] = await db.execute("SELECT * FROM vendors");
     if (vendor.length === 0) {
-      return res.status(404).json({ message: "no vendors available" });
+      return res.status(404).json({ message: "No vendors found." });
     }
     return res.status(200).json({ vendors:vendor});
   } catch (error) {
@@ -114,14 +122,14 @@ export const deleteVendor = async (req, res) => {
     const { id } = req.params;
     const [rows] = await db.execute("SELECT id FROM vendors WHERE id=?", [id]);
     if (rows.length === 0) {
-      return res.status(404).json({ message: "vendor not found" });
+      return res.status(404).json({ message: "Vendor not found." });
     }
     await db.execute("DELETE FROM vendors WHERE id=?", [id]);
-    res.status(200).json({ message: "vendor deleted sucessfully" });
+    res.status(200).json({ message: "Vendor deleted successfully." });
   } catch (error) {
     res
       .status(500)
-      .json({ message: "Failed to delete vendor", error: error.message });
+      .json({ message: "Unable to delete the vendor right now. Please try again later." });
   }
 };
 export const updateVendor = async (req, res) => {
@@ -131,7 +139,7 @@ export const updateVendor = async (req, res) => {
 
     if (!company_id || !username || !email) {
       return res.status(400).json({
-        message: "company_id, username and email are required",
+        message: "Company, username, and email are required.",
       });
     }
 
@@ -143,7 +151,7 @@ export const updateVendor = async (req, res) => {
 
     if (existingVendor.length === 0) {
       return res.status(404).json({
-        message: "Vendor not found",
+        message: "Vendor not found.",
       });
     }
 
@@ -155,7 +163,7 @@ export const updateVendor = async (req, res) => {
 
     if (usernameExists.length > 0) {
       return res.status(400).json({
-        message: "Vendor username already exists",
+        message: "This vendor username is already in use.",
       });
     }
 
@@ -167,7 +175,7 @@ export const updateVendor = async (req, res) => {
 
     if (emailExists.length > 0) {
       return res.status(400).json({
-        message: "Email already exists",
+        message: "This email address is already in use.",
       });
     }
 
@@ -190,13 +198,12 @@ export const updateVendor = async (req, res) => {
     await db.query(updateQuery, queryParams);
 
     res.status(200).json({
-      message: "Vendor updated successfully",
+      message: "Vendor updated successfully.",
     });
   } catch (error) {
     console.log("Update Vendor Error:", error);
     res.status(500).json({
-      message: "Server error",
-      error: error.message,
+      message: "Unable to update the vendor right now. Please try again later.",
     });
   }
 };
@@ -206,24 +213,31 @@ export const addCompany = async (req, res) => {
     if (!name || !email || !number || !address) {
       return res
         .status(400)
-        .json({ message: "All required fields must be filled" });
+        .json({ message: "Please fill in all required fields." });
     }
     const [existingCompany] = await db.execute(
       "SELECT email FROM companies WHERE email = ?",
       [email],
     );
     if (existingCompany.length > 0) {
-      return res.status(400).json({ message: "Company already exists" });
+      return res.status(400).json({ message: "A company with this email address already exists." });
+    }
+    const [existingNumber] = await db.execute(
+      "SELECT number FROM companies WHERE number = ?",
+      [number],
+    );
+    if (existingNumber.length > 0) {
+      return res.status(400).json({ message: "This contact number is already in use." });
     }
     await db.execute(
       "INSERT INTO companies (name, email, number, address) VALUES (?, ?, ?, ?)",
       [name, email, number, address],
     );
-    res.status(201).json({ message: "Company added successfully" });
+    res.status(201).json({ message: "Company added successfully." });
   } catch (error) {
     res
       .status(500)
-      .json({ message: "Failed to add company", error: error.message });
+      .json({ message: "Unable to add the company right now. Please try again later." });
   }
 };
 export const getAllCompany = async (req, res) => {
@@ -231,14 +245,14 @@ export const getAllCompany = async (req, res) => {
     const { id } = req.params;
     const [rows] = await db.execute("SELECT * FROM companies ");
     if (rows.length === 0) {
-      return res.status(404).json({ message: "Company not found" });
+      return res.status(404).json({ message: "Company not found." });
     }
     res.status(200).json({
-      message: "Company fetched successfully",
+      message: "Companies fetched successfully.",
       company: rows,
     });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ message: "Unable to fetch companies right now. Please try again later." });
   }
 };
 export const deleteCompany = async (req, res) => {
@@ -248,16 +262,28 @@ export const deleteCompany = async (req, res) => {
       id,
     ]);
     if (rows.length === 0) {
-      return res.status(404).json({ message: "Company not found" });
+      return res.status(404).json({ message: "Company not found." });
     }
+
+    const [vendors] = await db.execute(
+      "SELECT id FROM vendors WHERE company_id = ? LIMIT 1",
+      [id],
+    );
+    if (vendors.length > 0) {
+      return res.status(400).json({
+        message:
+          "This company cannot be deleted because one or more vendors are still assigned to it.",
+      });
+    }
+
     await db.execute("DELETE FROM companies WHERE id = ?", [id]);
     res.status(200).json({
-      message: "company deleted successfully",
+      message: "Company deleted successfully.",
     });
   } catch (error) {
     res
       .status(500)
-      .json({ message: "Failed to delete company", error: error.message });
+      .json({ message: "Unable to delete the company right now. Please try again later." });
   }
 };
 export const updateCompany = async (req, res) => {
@@ -273,7 +299,7 @@ export const updateCompany = async (req, res) => {
 
     if (existingCompany.length === 0) {
       return res.status(404).json({
-        message: "Company not found",
+        message: "Company not found.",
       });
     }
 
@@ -294,7 +320,7 @@ export const updateCompany = async (req, res) => {
 
       if (existingEmail.length > 0) {
         return res.status(400).json({
-          message: "Email already exists",
+          message: "This email address is already in use.",
         });
       }
     }
@@ -308,12 +334,11 @@ export const updateCompany = async (req, res) => {
     );
 
     res.status(200).json({
-      message: "Company updated successfully",
+      message: "Company updated successfully.",
     });
   } catch (error) {
     res.status(500).json({
-      message: "Failed to update company",
-      error: error.message,
+      message: "Unable to update the company right now. Please try again later.",
     });
   }
 };
@@ -326,7 +351,7 @@ export const getDashboardStats = async (req, res) => {
 
     res.status(200).json({ totalCompanies, totalVendors, totalMembers, totalRevenue });
   } catch (error) {
-    res.status(500).json({ message: "Server error", error: error.message });
+    res.status(500).json({ message: "Unable to load dashboard data right now. Please try again later." });
   }
 };
 export const verifyToken = async (req, res) => {
@@ -334,21 +359,21 @@ export const verifyToken = async (req, res) => {
     const token = req.cookies.token;
 
     if (!token) {
-      return res.status(401).json({ message: "No token provided" });
+      return res.status(401).json({ message: "Please log in to continue." });
     }
 
     jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
       if (err) {
         res.clearCookie("token");
-        return res.status(401).json({ message: "Token expired or invalid" });
+        return res.status(401).json({ message: "Your session has expired. Please log in again." });
       }
       res.status(200).json({
-        message: "Token is valid",
+        message: "Session verified successfully.",
         user: decoded,
       });
     });
   } catch (error) {
     console.log(error);
-    res.status(500).json({ message: "Server error", error });
+    res.status(500).json({ message: "Unable to verify your session right now. Please try again later." });
   }
 };

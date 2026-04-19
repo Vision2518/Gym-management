@@ -8,6 +8,7 @@ import {
 } from "../redux/features/authSlice";
 import { useDispatch } from "react-redux";
 import { setUser } from "../redux/features/authState";
+import { getErrorMessage } from "../utils/toastMessage";
 
 const GymVendorLogin = ({ role = "admin" }) => {
   const isAdmin = role === "admin";
@@ -32,7 +33,10 @@ const GymVendorLogin = ({ role = "admin" }) => {
       const fn = isAdmin ? login : vendorLogin;
       const payload = await fn(formData).unwrap();
       const token = payload?.token;
-      if (!token) { alert("No token"); return; }
+      if (!token) {
+        toast.error("Login failed. No access token was returned.");
+        return;
+      }
 
       localStorage.setItem("authToken", token);
       const decoded = JSON.parse(atob(token.split(".")[1]));
@@ -40,9 +44,11 @@ const GymVendorLogin = ({ role = "admin" }) => {
 
       if (decoded.role === "super_admin") navigate("/admin/dashboard");
       else if (decoded.role === "vendor") navigate("/vendor/dashboard");
-      else alert("Unknown role: " + decoded.role);
+      else toast.error("Login failed. Unknown user role.");
     } catch (err) {
-      alert("error: " + JSON.stringify(err?.data || err?.message));
+      toast.error(
+        getErrorMessage(err, "Login failed. Please check your email and password."),
+      );
     }
   };
 

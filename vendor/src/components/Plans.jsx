@@ -4,6 +4,7 @@ import { toast } from "react-toastify";
 import Modal from "./shared/Modal";
 import Input from "./shared/Input";
 import { useGetPlansByCompanyQuery, useAddPlanMutation, useUpdatePlanMutation, useDeletePlanMutation } from "../redux/features/authSlice";
+import { getErrorMessage } from "../utils/toastMessage";
 
 const empty = { name: "", duration: "", price: "" };
 
@@ -52,7 +53,7 @@ const Plans = () => {
       setForm(empty);
       setInitialForm(empty);
     } catch (err) {
-      toast.error(err?.data?.message || "Operation failed");
+      toast.error(getErrorMessage(err, "Unable to save plan details."));
     }
   };
 
@@ -67,7 +68,7 @@ const Plans = () => {
       toast.success("Plan deleted");
       setShowDeleteModal(false);
     } catch (err) {
-      toast.error(err?.data?.message || "Delete failed");
+      toast.error(getErrorMessage(err, "Unable to delete plan."));
     }
   };
 
@@ -76,7 +77,7 @@ const Plans = () => {
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-3xl font-bold text-white">Membership Plans</h1>
         <button onClick={openAdd} className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg transition-colors">
-          <FaPlus /> Add Plan
+           Add Plan
         </button>
       </div>
 
@@ -108,10 +109,12 @@ const Plans = () => {
         )}
       </div>
 
-      <Modal show={showModal} title={editing ? "Edit Plan" : "Add Plan"} onClose={() => { setShowModal(false); setEditing(null); setForm(empty); setInitialForm(empty); }} onSubmit={handleSubmit} submitLabel={editing ? "Update Plan" : "Add Plan"} submitLoadingLabel={editing ? "Updating..." : "Adding..."} isSubmitting={isSubmitDisabled}>
-        <Input label="Plan Name" name="name" placeholder="e.g. Gold" value={form.name} onChange={handleChange} required />
-        <Input label="Duration" name="duration" placeholder="e.g. 1 Month" value={form.duration} onChange={handleChange} required />
-        <Input label="Price (Rs)" name="price" type="number" placeholder="e.g. 2000" value={form.price} onChange={handleChange} required />
+      <Modal show={showModal} title={editing ? "Edit Plan" : "Add Plan"} onClose={() => { setShowModal(false); setEditing(null); setForm(empty); setInitialForm(empty); }} onSubmit={handleSubmit} submitLabel={editing ? "Update Plan" : "Add Plan"} submitLoadingLabel={editing ? "Updating..." : "Adding..."} isSubmitting={isSubmitDisabled} size="4xl">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <Input label="Plan Name" name="name" placeholder="e.g. Gold" value={form.name} onChange={handleChange} required />
+          <Input label="Duration" name="duration" placeholder="e.g. 1 Month" value={form.duration} onChange={handleChange} required />
+          <Input label="Price (Rs)" name="price" type="number" placeholder="e.g. 2000" value={form.price} onChange={handleChange} required />
+        </div>
       </Modal>
 
       <Modal

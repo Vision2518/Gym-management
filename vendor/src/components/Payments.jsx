@@ -3,12 +3,15 @@ import { FaPlus, FaEdit, FaTrash, FaFileInvoice } from "react-icons/fa";
 import { toast } from "react-toastify";
 import Modal from "./shared/Modal";
 import Input from "./shared/Input";
-import { useGetAllPaymentsQuery, useAddPaymentMutation, useUpdatePaymentMutation, useDeletePaymentMutation } from "../redux/features/authSlice";
+import { useGetAllPaymentsQuery, useAddPaymentMutation, useUpdatePaymentMutation, useDeletePaymentMutation, useGetMembersByCompanyQuery, useGetPlansByCompanyQuery } from "../redux/features/authSlice";
+import { getErrorMessage } from "../utils/toastMessage";
 
 const empty = { member_id: "", plan_id: "", discount: 0, paid_amount: "", payment_method: "cash", remarks: "" };
 
 const Payments = () => {
   const { data, isLoading, isError } = useGetAllPaymentsQuery();
+  const { data: membersData } = useGetMembersByCompanyQuery();
+  const { data: plansData } = useGetPlansByCompanyQuery();
   const [addPayment, { isLoading: isAddingPayment }] = useAddPaymentMutation();
   const [updatePayment, { isLoading: isUpdatingPayment }] = useUpdatePaymentMutation();
   const [deletePayment, { isLoading: isDeletingPayment }] = useDeletePaymentMutation();
@@ -19,21 +22,67 @@ const Payments = () => {
   const [deletingPayment, setDeletingPayment] = useState(null);
   const [form, setForm] = useState(empty);
   const [initialForm, setInitialForm] = useState(empty);
+  const [memberSearch, setMemberSearch] = useState("");
 
   const payments = data?.payments || [];
+  const members = membersData?.members || [];
+  const plans = plansData?.plans || [];
   const isSubmitting = isAddingPayment || isUpdatingPayment;
   const isDirty = JSON.stringify(form) !== JSON.stringify(initialForm);
   const isSubmitDisabled = isSubmitting || (editing && !isDirty);
+  const normalizedSearch = memberSearch.trim().toLowerCase();
+  const filteredMembers = members
+    .filter((member) =>
+      member.full_name?.toLowerCase().includes(normalizedSearch),
+    )
+    .sort((a, b) => {
+      const aName = a.full_name?.toLowerCase() || "";
+      const bName = b.full_name?.toLowerCase() || "";
+      const aStarts = aName.startsWith(normalizedSearch);
+      const bStarts = bName.startsWith(normalizedSearch);
 
-  const openAdd = () => { setEditing(null); setForm(empty); setInitialForm(empty); setShowModal(true); };
+      if (aStarts && !bStarts) return -1;
+      if (!aStarts && bStarts) return 1;
+      return aName.localeCompare(bName);
+    });
+  const selectedMember = members.find((member) => String(member.id) === String(form.member_id));
+  const selectedPlan = plans.find((plan) => String(plan.id) === String(form.plan_id));
+
+  const openAdd = () => {
+    setEditing(null);
+    setForm(empty);
+    setInitialForm(empty);
+    setMemberSearch("");
+    setShowModal(true);
+  };
   const openEdit = (p) => {
     const nextForm = { member_id: p.member_id, plan_id: p.plan_id, discount: p.discount, paid_amount: p.paid_amount, payment_method: p.payment_method, remarks: p.remarks || "" };
     setEditing(p);
     setForm(nextForm);
     setInitialForm(nextForm);
+    setMemberSearch(p.member_name || "");
     setShowModal(true);
   };
   const handleChange = (e) => setForm((p) => ({ ...p, [e.target.name]: e.target.value }));
+  const handleMemberSelect = (e) => {
+    const memberId = e.target.value;
+    const member = members.find((item) => String(item.id) === String(memberId));
+
+    setForm((prev) => ({
+      ...prev,
+      member_id: memberId,
+      plan_id: member?.plan_id || "",
+    }));
+    setMemberSearch(member?.full_name || "");
+  };
+  const handleMemberPick = (member) => {
+    setForm((prev) => ({
+      ...prev,
+      member_id: member.id,
+      plan_id: member.plan_id || "",
+    }));
+    setMemberSearch(member.full_name || "");
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -49,8 +98,9 @@ const Payments = () => {
       setEditing(null);
       setForm(empty);
       setInitialForm(empty);
+      setMemberSearch("");
     } catch (err) {
-      toast.error(err?.data?.message || "Operation failed");
+      toast.error(getErrorMessage(err, "Unable to save payment details."));
     }
   };
 
@@ -65,7 +115,7 @@ const Payments = () => {
       toast.success("Payment deleted");
       setShowDeleteModal(false);
     } catch (err) {
-      toast.error(err?.data?.message || "Delete failed");
+      toast.error(getErrorMessage(err, "Unable to delete payment."));
     }
   };
 
@@ -78,7 +128,7 @@ const Payments = () => {
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-3xl font-bold text-white">Payments</h1>
         <button onClick={openAdd} className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg transition-colors">
-          <FaPlus /> Add Payment
+           Add Payment
         </button>
       </div>
 
@@ -113,20 +163,74 @@ const Payments = () => {
         )}
       </div>
 
-      <Modal show={showModal} title={editing ? "Edit Payment" : "Add Payment"} onClose={() => { setShowModal(false); setEditing(null); setForm(empty); setInitialForm(empty); }} onSubmit={handleSubmit} submitLabel={editing ? "Update" : "Add Payment"} submitLoadingLabel={editing ? "Updating..." : "Adding..."} isSubmitting={isSubmitDisabled}>
-        <Input label="Member ID" name="member_id" type="number" placeholder="Member ID" value={form.member_id} onChange={handleChange} required />
-        <Input label="Plan ID" name="plan_id" type="number" placeholder="Plan ID" value={form.plan_id} onChange={handleChange} required />
-        <Input label="Paid Amount" name="paid_amount" type="number" placeholder="Amount" value={form.paid_amount} onChange={handleChange} required />
-        <Input label="Discount" name="discount" type="number" placeholder="0" value={form.discount} onChange={handleChange} />
-        <label className="flex flex-col text-left">
-          <span>Payment Method <span className="text-red-500">*</span></span>
-          <select name="payment_method" value={form.payment_method} onChange={handleChange} className="border p-2 rounded">
-            <option value="cash">Cash</option>
-            <option value="card">Card</option>
-            <option value="online">Online</option>
-          </select>
-        </label>
-        <Input label="Remarks" name="remarks" placeholder="Optional remarks" value={form.remarks} onChange={handleChange} />
+      <Modal show={showModal} title={editing ? "Edit Payment" : "Add Payment"} onClose={() => { setShowModal(false); setEditing(null); setForm(empty); setInitialForm(empty); setMemberSearch(""); }} onSubmit={handleSubmit} submitLabel={editing ? "Update" : "Add Payment"} submitLoadingLabel={editing ? "Updating..." : "Adding..."} isSubmitting={isSubmitDisabled} size="4xl">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <Input
+            label="Search Member"
+            name="member_search"
+            placeholder="Search by member name"
+            value={memberSearch}
+            onChange={(e) => setMemberSearch(e.target.value)}
+          />
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-700">Member Name</label>
+            <div className="rounded-xl border border-gray-200 bg-white/50 backdrop-blur-sm max-h-48 overflow-y-auto">
+              {normalizedSearch ? (
+                filteredMembers.length > 0 ? (
+                  filteredMembers.map((member) => (
+                    <button
+                      key={member.id}
+                      type="button"
+                      onClick={() => handleMemberPick(member)}
+                      className={`w-full px-4 py-3 text-left transition-colors border-b border-gray-100 last:border-b-0 ${
+                        String(form.member_id) === String(member.id)
+                          ? "bg-red-50 text-red-700 font-semibold"
+                          : "hover:bg-gray-50 text-gray-700"
+                      }`}
+                    >
+                      {member.full_name}
+                    </button>
+                  ))
+                ) : (
+                  <p className="px-4 py-3 text-sm text-gray-500">No matching members found.</p>
+                )
+              ) : (
+                <select
+                  name="member_id"
+                  value={form.member_id}
+                  onChange={handleMemberSelect}
+                  required
+                  className="w-full px-4 py-3 rounded-xl focus:outline-none bg-transparent text-gray-700"
+                >
+                  <option value="">Select a member</option>
+                  {members.map((member) => (
+                    <option key={member.id} value={member.id}>
+                      {member.full_name}
+                    </option>
+                  ))}
+                </select>
+              )}
+            </div>
+          </div>
+          <Input
+            label="Plan"
+            name="plan_name"
+            value={selectedPlan?.plan_name || selectedMember?.plan_name || ""}
+            placeholder="Plan will be selected automatically"
+            readOnly
+          />
+          <Input label="Paid Amount" name="paid_amount" type="number" placeholder="Amount" value={form.paid_amount} onChange={handleChange} required />
+          <Input label="Discount" name="discount" type="number" placeholder="0" value={form.discount} onChange={handleChange} />
+          <label className="flex flex-col text-left">
+            <span>Payment Method <span className="text-red-500">*</span></span>
+            <select name="payment_method" value={form.payment_method} onChange={handleChange} className="border p-2 rounded">
+              <option value="cash">Cash</option>
+              <option value="card">Card</option>
+              <option value="online">Online</option>
+            </select>
+          </label>
+          <Input label="Remarks" name="remarks" placeholder="Optional remarks" value={form.remarks} onChange={handleChange} />
+        </div>
       </Modal>
 
       <Modal

@@ -11,6 +11,7 @@ import { toast } from "react-toastify";
 import DetailsModal from "./shared/Modal";
 import Input from "./shared/Input";
 import Select from "./shared/Select";
+import { getErrorMessage } from "../utils/toastMessage";
 
 const empty = {
   company_id: "",
@@ -81,7 +82,7 @@ const Vendors = () => {
       }
       closeModal();
     } catch (err) {
-      toast.error(err?.data?.message || "Operation failed");
+      toast.error(getErrorMessage(err, "Unable to save vendor details."));
     }
   };
 
@@ -96,7 +97,7 @@ const Vendors = () => {
       toast.success("Vendor deleted");
       setShowDeleteModal(false);
     } catch (err) {
-      toast.error(err?.data?.message || "Delete failed");
+      toast.error(getErrorMessage(err, "Unable to delete vendor."));
     }
   };
 

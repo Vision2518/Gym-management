@@ -4,6 +4,7 @@ import { useVendorLoginMutation } from "../redux/features/authSlice";
 import { useDispatch } from "react-redux";
 import { setUser } from "../redux/features/authState";
 import { toast } from "react-toastify";
+import { getErrorMessage } from "../utils/toastMessage";
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -25,7 +26,9 @@ const Login = () => {
         navigate("/vendor/dashboard");
       }
     } catch (err) {
-      toast.error(err?.data?.message || "Login failed");
+      toast.error(
+        getErrorMessage(err, "Login failed. Please check your email and password."),
+      );
     }
   };
 

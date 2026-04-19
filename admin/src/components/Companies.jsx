@@ -10,6 +10,7 @@ import { toast } from "react-toastify";
 import DetailsModal from "./shared/Modal";
 import Input from "./shared/Input";
 import Textarea from "./shared/Textarea";
+import { getErrorMessage } from "../utils/toastMessage";
 
 const empty = { name: "", email: "", number: "", address: "" };
 
@@ -74,7 +75,7 @@ const Companies = () => {
       }
       closeModal();
     } catch (err) {
-      toast.error(err?.data?.message || "Operation failed");
+      toast.error(getErrorMessage(err, "Unable to save company details."));
     }
   };
 
@@ -89,7 +90,7 @@ const Companies = () => {
       toast.success("Company deleted");
       setShowDeleteModal(false);
     } catch (err) {
-      toast.error(err?.data?.message || "Delete failed");
+      toast.error(getErrorMessage(err, "Unable to delete company."));
     }
   };
 
