@@ -12,6 +12,8 @@ import {
 } from "../redux/features/authSlice";
 import { useGetSchedulesByCompanyQuery, useGetPlansByCompanyQuery } from "../redux/features/authSlice";
 
+const phoneRegex = /^\d{10}$/;
+
 const empty = { full_name: "", phone: "", email: "", gender: "", age: "", address: "", join_date: "", status: "active", plan_id: "", schedule_id: "", company_id: "" };
 
 const getVendorCompanyId = () => {
@@ -69,6 +71,12 @@ const Members = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (isSubmitDisabled) return;
+    if (!phoneRegex.test(form.phone)) {
+      toast.error("Phone number must be exactly 10 digits.");
+      return;
+    }
+
     try {
       if (editing) {
         await updateMember({ id: editing.id, ...form }).unwrap();
@@ -156,7 +164,7 @@ const Members = () => {
       <Modal show={showModal} title={editing ? "Edit Member" : "Add Member"} onClose={() => { setShowModal(false); setEditing(null); setForm(empty); setInitialForm(empty); }} onSubmit={handleSubmit} submitLabel={editing ? "Update" : "Add Member"} submitLoadingLabel={editing ? "Updating..." : "Adding..."} isSubmitting={isSubmitDisabled} size="4xl">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Input label="Full Name" name="full_name" placeholder="Full Name" value={form.full_name} onChange={handleChange} required />
-          <Input label="Phone" name="phone" placeholder="Phone" value={form.phone} onChange={handleChange} required />
+          <Input label="Phone" name="phone" placeholder="Phone" value={form.phone} onChange={handleChange} required inputMode="numeric" pattern="\d{10}" maxLength={10} title="Phone number must be exactly 10 digits" />
           <Input label="Email" name="email" type="email" placeholder="Email" value={form.email} onChange={handleChange} />
           <Input label="Age" name="age" placeholder="Age" value={form.age} onChange={handleChange} />
           <Input label="Join Date" name="join_date" type="date" value={form.join_date} onChange={handleChange} required />

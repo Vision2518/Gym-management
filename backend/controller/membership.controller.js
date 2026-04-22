@@ -1,4 +1,7 @@
 import db from "../config/db.connect.js";
+
+const isValidPhoneNumber = (value) => /^\d{10}$/.test(String(value || "").trim());
+
 export const addMember = async (req, res) => {
   try {
     const {
@@ -28,6 +31,12 @@ export const addMember = async (req, res) => {
         success: false,
         message:
           "Company, plan, schedule, full name, phone number, and join date are required.",
+      });
+    }
+    if (!isValidPhoneNumber(phone)) {
+      return res.status(400).json({
+        success: false,
+        message: "Phone number must be exactly 10 digits.",
       });
     }
     const [existingMember] = await db.query(
@@ -137,7 +146,7 @@ export const getMembersByCompany = async (req, res) => {
     }
 
     const [members] = await db.query(
-      "SELECT * FROM members WHERE company_id = ?",
+      "SELECT * FROM members WHERE company_id = ? ORDER BY id DESC",
       [company_id],
     );
 
@@ -208,6 +217,13 @@ export const updateMember = async (req, res, next) => {
     const updatedStatus = status || oldMember.status;
     const updatedSchedule_Id = schedule_id || oldMember.schedule_id;
 
+    if (!isValidPhoneNumber(updatedPhone)) {
+      return res.status(400).json({
+        success: false,
+        message: "Phone number must be exactly 10 digits.",
+      });
+    }
+
     // 3. Optional: Check if plan exists if plan_id changed
     if (plan_id && plan_id !== oldMember.plan_id) {
       const [plan] = await db.query(
@@ -219,6 +235,20 @@ export const updateMember = async (req, res, next) => {
         return res.status(404).json({
           success: false,
           message: "Selected membership plan was not found.",
+        });
+      }
+    }
+
+    if (phone) {
+      const [existingPhone] = await db.query(
+        "SELECT phone FROM members WHERE phone = ? AND id != ?",
+        [phone, id],
+      );
+
+      if (existingPhone.length > 0) {
+        return res.status(400).json({
+          success: false,
+          message: "This phone number is already in use.",
         });
       }
     }
@@ -294,7 +324,9 @@ export const addMemberSchedule = async (req, res) => {
 };
 export const getAllMemberSchedules = async (req, res) => {
   try {
-    const [schedules] = await db.query("SELECT * FROM member_schedules");
+    const [schedules] = await db.query(
+      "SELECT * FROM member_schedules ORDER BY id DESC",
+    );
 
     res.status(200).json({
       success: true,
@@ -416,7 +448,8 @@ export const getSchedulesByCompany = async (req, res) => {
         ms.end_time
       FROM member_schedules ms
       LEFT JOIN members m ON ms.member_id = m.id
-      WHERE ms.company_id = ?`,
+      WHERE ms.company_id = ?
+      ORDER BY ms.id DESC`,
       [company_id],
     );
 

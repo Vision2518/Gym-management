@@ -111,6 +111,7 @@ export const getAllPlan = async (req, res) => {
         m.price
       FROM membership_plans m
       LEFT JOIN companies c ON m.company_id = c.id
+      ORDER BY m.id DESC
     `);
     res.status(200).json({
       success: true,
@@ -139,7 +140,8 @@ export const getPlanByCompany = async (req, res) => {
         m.price
        FROM membership_plans m
        JOIN companies c ON m.company_id = c.id
-       WHERE m.company_id = ?`,
+       WHERE m.company_id = ?
+       ORDER BY m.id DESC`,
       [company_id]
     );
 

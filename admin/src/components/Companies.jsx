@@ -9,8 +9,9 @@ import {
 import { toast } from "react-toastify";
 import DetailsModal from "./shared/Modal";
 import Input from "./shared/Input";
-import Textarea from "./shared/Textarea";
 import { getErrorMessage } from "../utils/toastMessage";
+
+const phoneRegex = /^\d{10}$/;
 
 const empty = { name: "", email: "", number: "", address: "" };
 
@@ -65,6 +66,12 @@ const Companies = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (isSubmitDisabled) return;
+    if (!phoneRegex.test(form.number)) {
+      toast.error("Phone number must be exactly 10 digits.");
+      return;
+    }
+
     try {
       if (editing) {
         await updateCompany({ id: editing.id, ...form }).unwrap();
@@ -182,7 +189,7 @@ const Companies = () => {
               form="company-form"
               type="submit"
               disabled={isSubmitDisabled}
-              className="bg-[#00ab41] hover:bg-green-700 disabled:bg-green-400 disabled:cursor-not-allowed text-white py-3 px-12 rounded-lg font-bold transition-all duration-200 shadow-md transform active:scale-95"
+              className="bg-[#00ab41] hover:bg-green-700 disabled:bg-green-400 disabled:cursor-not-allowed text-white py-3 px-12 rounded-lg font-bold transition-all duration-200 shadow-md transform active:scale-95 disabled:active:scale-100"
             >
               {isSubmitting
                 ? editing
@@ -222,12 +229,13 @@ const Companies = () => {
               value={form.number}
               onChange={handleChange}
               required
+              inputMode="numeric"
+              pattern="\d{10}"
+              maxLength={10}
+              title="Phone number must be exactly 10 digits"
             />
-          </div>
-
-          {/* FULL WIDTH ROW 2 */}
-          <div className="w-full">
-            <Textarea
+            <div className="md:col-span-3">
+            <Input
               label="Address"
               name="address"
               placeholder="Enter full company address"
@@ -235,6 +243,7 @@ const Companies = () => {
               onChange={handleChange}
               required
             />
+            </div>
           </div>
         </form>
       </DetailsModal>

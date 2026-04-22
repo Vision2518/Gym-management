@@ -558,7 +558,7 @@ export const getPaymentHistoryByMemberId = async (req, res) => {
        FROM payments p
        JOIN membership_plans mp ON p.plan_id = mp.id
        WHERE p.member_id = ?
-       ORDER BY p.id ASC`,
+       ORDER BY p.id DESC`,
       [member_id],
     );
 

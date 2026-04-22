@@ -13,6 +13,8 @@ import Input from "./shared/Input";
 import Select from "./shared/Select";
 import { getErrorMessage } from "../utils/toastMessage";
 
+const phoneRegex = /^\d{10}$/;
+
 const empty = {
   company_id: "",
   username: "",
@@ -72,6 +74,12 @@ const Vendors = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (isSubmitDisabled) return;
+    if (form.number && !phoneRegex.test(form.number)) {
+      toast.error("Phone number must be exactly 10 digits.");
+      return;
+    }
+
     try {
       if (editing) {
         await updateVendor({ id: editing.id, ...form }).unwrap();
@@ -201,7 +209,7 @@ const Vendors = () => {
               form="vendor-form"
               type="submit"
               disabled={isSubmitDisabled}
-              className="bg-[#00ab41] hover:bg-green-700 disabled:bg-green-400 disabled:cursor-not-allowed text-white py-3 px-12 rounded-lg font-bold transition-all duration-200 shadow-md transform active:scale-95"
+              className="bg-[#00ab41] hover:bg-green-700 disabled:bg-green-400 disabled:cursor-not-allowed text-white py-3 px-12 rounded-lg font-bold transition-all duration-200 shadow-md transform active:scale-95 disabled:active:scale-100"
             >
               {isSubmitting
                 ? editing
@@ -261,6 +269,10 @@ const Vendors = () => {
               placeholder="Enter phone number"
               value={form.number}
               onChange={handleChange}
+              inputMode="numeric"
+              pattern="\d{10}"
+              maxLength={10}
+              title="Phone number must be exactly 10 digits"
             />
           </div>
         </form>

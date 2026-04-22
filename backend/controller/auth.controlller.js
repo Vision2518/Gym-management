@@ -1,6 +1,9 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import db from "../config/db.connect.js";
+
+const isValidPhoneNumber = (value) => /^\d{10}$/.test(String(value || "").trim());
+
 export const loginAdmin = async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -83,6 +86,9 @@ export const addVendor = async (req, res) => {
       return res.status(400).json({ message: "This email address is already in use." });
     }
     if (number) {
+      if (!isValidPhoneNumber(number)) {
+        return res.status(400).json({ message: "Phone number must be exactly 10 digits." });
+      }
       const [existingNumber] = await db.query(
         "SELECT number FROM vendors WHERE number = ?",
         [number],
@@ -108,7 +114,7 @@ export const addVendor = async (req, res) => {
 };
 export const getAllVendor = async (req, res) => {
   try {
-    const [vendor] = await db.execute("SELECT * FROM vendors");
+    const [vendor] = await db.execute("SELECT * FROM vendors ORDER BY id DESC");
     if (vendor.length === 0) {
       return res.status(404).json({ message: "No vendors found." });
     }
@@ -155,6 +161,12 @@ export const updateVendor = async (req, res) => {
       });
     }
 
+    if (number && !isValidPhoneNumber(number)) {
+      return res.status(400).json({
+        message: "Phone number must be exactly 10 digits.",
+      });
+    }
+
     // Check if username already exists for another vendor
     const [usernameExists] = await db.query(
       "SELECT * FROM vendors WHERE username = ? AND id != ?",
@@ -177,6 +189,19 @@ export const updateVendor = async (req, res) => {
       return res.status(400).json({
         message: "This email address is already in use.",
       });
+    }
+
+    if (number) {
+      const [numberExists] = await db.query(
+        "SELECT * FROM vendors WHERE number = ? AND id != ?",
+        [number, id]
+      );
+
+      if (numberExists.length > 0) {
+        return res.status(400).json({
+          message: "This phone number is already in use.",
+        });
+      }
     }
 
     let updateQuery = `
@@ -215,6 +240,9 @@ export const addCompany = async (req, res) => {
         .status(400)
         .json({ message: "Please fill in all required fields." });
     }
+    if (!isValidPhoneNumber(number)) {
+      return res.status(400).json({ message: "Phone number must be exactly 10 digits." });
+    }
     const [existingCompany] = await db.execute(
       "SELECT email FROM companies WHERE email = ?",
       [email],
@@ -243,7 +271,7 @@ export const addCompany = async (req, res) => {
 export const getAllCompany = async (req, res) => {
   try {
     const { id } = req.params;
-    const [rows] = await db.execute("SELECT * FROM companies ");
+    const [rows] = await db.execute("SELECT * FROM companies ORDER BY id DESC");
     if (rows.length === 0) {
       return res.status(404).json({ message: "Company not found." });
     }
@@ -311,6 +339,12 @@ export const updateCompany = async (req, res) => {
     const updatedNumber = number || currentCompany.number;
     const updatedAddress = address || currentCompany.address;
 
+    if (!isValidPhoneNumber(updatedNumber)) {
+      return res.status(400).json({
+        message: "Phone number must be exactly 10 digits.",
+      });
+    }
+
     // Check if email already exists for another company (only if email is changed)
     if (email) {
       const [existingEmail] = await db.execute(
@@ -321,6 +355,19 @@ export const updateCompany = async (req, res) => {
       if (existingEmail.length > 0) {
         return res.status(400).json({
           message: "This email address is already in use.",
+        });
+      }
+    }
+
+    if (number) {
+      const [existingNumber] = await db.execute(
+        "SELECT * FROM companies WHERE number = ? AND id != ?",
+        [number, id]
+      );
+
+      if (existingNumber.length > 0) {
+        return res.status(400).json({
+          message: "This contact number is already in use.",
         });
       }
     }
