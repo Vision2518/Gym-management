@@ -3,6 +3,10 @@ import jwt from "jsonwebtoken";
 import db from "../config/db.connect.js";
 
 const isValidPhoneNumber = (value) => /^\d{10}$/.test(String(value || "").trim());
+const isStrongPassword = (value) =>
+  /^(?=.*[A-Za-z])(?=.*\d)(?=.*[^A-Za-z\d]).{6,}$/.test(
+    String(value || ""),
+  );
 
 export const loginAdmin = async (req, res) => {
   try {
@@ -67,6 +71,12 @@ export const addVendor = async (req, res) => {
     if (!company_id || !username || !email || !password) {
       return res.status(400).json({
         message: "Company, username, email, and password are required.",
+      });
+    }
+    if (!isStrongPassword(password)) {
+      return res.status(400).json({
+        message:
+          "Password must be at least 6 characters and include letters, numbers, and a symbol.",
       });
     }
     const [existingVendor] = await db.query(
@@ -209,6 +219,13 @@ export const updateVendor = async (req, res) => {
       SET company_id = ?, username = ?, email = ?, number = ?
     `;
     let queryParams = [company_id, username, email, number || null];
+
+    if (password && !isStrongPassword(password)) {
+      return res.status(400).json({
+        message:
+          "Password must be at least 6 characters and include letters, numbers, and a symbol.",
+      });
+    }
 
     // If password is provided, update password too
     if (password) {

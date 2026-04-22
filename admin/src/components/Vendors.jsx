@@ -14,6 +14,7 @@ import Select from "./shared/Select";
 import { getErrorMessage } from "../utils/toastMessage";
 
 const phoneRegex = /^\d{10}$/;
+const strongPasswordRegex = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[^A-Za-z\d]).{6,}$/;
 
 const empty = {
   company_id: "",
@@ -77,6 +78,12 @@ const Vendors = () => {
     if (isSubmitDisabled) return;
     if (form.number && !phoneRegex.test(form.number)) {
       toast.error("Phone number must be exactly 10 digits.");
+      return;
+    }
+    if ((!editing || form.password) && !strongPasswordRegex.test(form.password)) {
+      toast.error(
+        "Password must be at least 6 characters and include letters, numbers, and a symbol.",
+      );
       return;
     }
 
@@ -262,6 +269,8 @@ const Vendors = () => {
               value={form.password}
               onChange={handleChange}
               required={!editing}
+              minLength={6}
+              title="Password must be at least 6 characters and include letters, numbers, and a symbol"
             />
             <Input
               label="Phone Number"
