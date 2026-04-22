@@ -294,12 +294,13 @@ export const updateMember = async (req, res, next) => {
 };
 export const addMemberSchedule = async (req, res) => {
   try {
-    const { company_id, start_time, end_time } = req.body;
+    const company_id = req.vendor?.company_id;
+    const { start_time, end_time } = req.body;
 
     if (!company_id || !start_time || !end_time) {
       return res.status(400).json({
         success: false,
-        message: "Company, start time, and end time are required.",
+        message: "Start time and end time are required.",
       });
     }
 
@@ -362,12 +363,13 @@ export const deleteSchedule = async (req, res) => {
 export const updateSchedule = async (req, res) => {
   try {
     const { id } = req.params; // schedule id from URL
-    const { company_id, start_time, end_time } = req.body;
+    const company_id = req.vendor?.company_id;
+    const { start_time, end_time } = req.body;
 
     if (!company_id || !start_time || !end_time) {
       return res.status(400).json({
         success: false,
-        message: "Company, start time, and end time are required.",
+        message: "Start time and end time are required.",
       });
     }
 

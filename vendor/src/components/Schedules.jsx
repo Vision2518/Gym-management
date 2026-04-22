@@ -8,6 +8,18 @@ import { getErrorMessage } from "../utils/toastMessage";
 
 const empty = { company_id: "", start_time: "", end_time: "" };
 
+const getVendorCompanyId = () => {
+  const token = localStorage.getItem("authToken");
+  if (!token) return "";
+
+  try {
+    const decoded = JSON.parse(atob(token.split(".")[1]));
+    return decoded.company_id || "";
+  } catch {
+    return "";
+  }
+};
+
 const Schedules = () => {
   const { data, isLoading, isError } = useGetSchedulesByCompanyQuery();
   const [addSchedule, { isLoading: isAddingSchedule }] = useAddScheduleMutation();
@@ -27,15 +39,18 @@ const Schedules = () => {
   const isSubmitDisabled = isSubmitting || (editing && !isDirty);
 
   const openAdd = () => {
-    const token = localStorage.getItem("authToken");
-    const decoded = JSON.parse(atob(token.split(".")[1]));
+    const companyId = getVendorCompanyId();
     setEditing(null);
-    setForm({ company_id: decoded.company_id, start_time: "", end_time: "" });
-    setInitialForm({ company_id: decoded.company_id, start_time: "", end_time: "" });
+    setForm({ company_id: companyId, start_time: "", end_time: "" });
+    setInitialForm({ company_id: companyId, start_time: "", end_time: "" });
     setShowModal(true);
   };
   const openEdit = (s) => {
-    const nextForm = { company_id: s.company_id, start_time: s.start_time, end_time: s.end_time };
+    const nextForm = {
+      company_id: getVendorCompanyId() || s.company_id,
+      start_time: s.start_time,
+      end_time: s.end_time,
+    };
     setEditing(s);
     setForm(nextForm);
     setInitialForm(nextForm);
@@ -113,9 +128,8 @@ const Schedules = () => {
         )}
       </div>
 
-      <Modal show={showModal} title={editing ? "Edit Schedule" : "Add Schedule"} onClose={() => { setShowModal(false); setEditing(null); setForm(empty); setInitialForm(empty); }} onSubmit={handleSubmit} submitLabel={editing ? "Update" : "Add Schedule"} submitLoadingLabel={editing ? "Updating..." : "Adding..."} isSubmitting={isSubmitDisabled} size="4xl">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Input label="Company ID" name="company_id" type="number" value={form.company_id} onChange={handleChange} required />
+      <Modal show={showModal} title={editing ? "Edit Schedule" : "Add Schedule"} onClose={() => { setShowModal(false); setEditing(null); setForm(empty); setInitialForm(empty); }} onSubmit={handleSubmit} submitLabel={editing ? "Update" : "Add Schedule"} submitLoadingLabel={editing ? "Update" : "Adding..."} isSubmitting={isSubmitDisabled} size="4xl">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Input label="Start Time" name="start_time" type="time" value={form.start_time} onChange={handleChange} required />
           <Input label="End Time" name="end_time" type="time" value={form.end_time} onChange={handleChange} required />
         </div>

@@ -163,7 +163,7 @@ const Payments = () => {
         )}
       </div>
 
-      <Modal show={showModal} title={editing ? "Edit Payment" : "Add Payment"} onClose={() => { setShowModal(false); setEditing(null); setForm(empty); setInitialForm(empty); setMemberSearch(""); }} onSubmit={handleSubmit} submitLabel={editing ? "Update" : "Add Payment"} submitLoadingLabel={editing ? "Updating..." : "Adding..."} isSubmitting={isSubmitDisabled} size="4xl">
+      <Modal show={showModal} title={editing ? "Edit Payment" : "Add Payment"} onClose={() => { setShowModal(false); setEditing(null); setForm(empty); setInitialForm(empty); setMemberSearch(""); }} onSubmit={handleSubmit} submitLabel={editing ? "Update" : "Add Payment"} submitLoadingLabel={editing ? "Update" : "Adding..."} isSubmitting={isSubmitDisabled} size="4xl">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Input
             label="Search Member"

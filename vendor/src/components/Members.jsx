@@ -161,7 +161,7 @@ const Members = () => {
         )}
       </div>
 
-      <Modal show={showModal} title={editing ? "Edit Member" : "Add Member"} onClose={() => { setShowModal(false); setEditing(null); setForm(empty); setInitialForm(empty); }} onSubmit={handleSubmit} submitLabel={editing ? "Update" : "Add Member"} submitLoadingLabel={editing ? "Updating..." : "Adding..."} isSubmitting={isSubmitDisabled} size="4xl">
+      <Modal show={showModal} title={editing ? "Edit Member" : "Add Member"} onClose={() => { setShowModal(false); setEditing(null); setForm(empty); setInitialForm(empty); }} onSubmit={handleSubmit} submitLabel={editing ? "Update" : "Add Member"} submitLoadingLabel={editing ? "Update" : "Adding..."} isSubmitting={isSubmitDisabled} size="4xl">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Input label="Full Name" name="full_name" placeholder="Full Name" value={form.full_name} onChange={handleChange} required />
           <Input label="Phone" name="phone" placeholder="Phone" value={form.phone} onChange={handleChange} required inputMode="numeric" pattern="\d{10}" maxLength={10} title="Phone number must be exactly 10 digits" />

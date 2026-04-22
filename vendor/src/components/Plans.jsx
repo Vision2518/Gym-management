@@ -109,7 +109,7 @@ const Plans = () => {
         )}
       </div>
 
-      <Modal show={showModal} title={editing ? "Edit Plan" : "Add Plan"} onClose={() => { setShowModal(false); setEditing(null); setForm(empty); setInitialForm(empty); }} onSubmit={handleSubmit} submitLabel={editing ? "Update Plan" : "Add Plan"} submitLoadingLabel={editing ? "Updating..." : "Adding..."} isSubmitting={isSubmitDisabled} size="4xl">
+      <Modal show={showModal} title={editing ? "Edit Plan" : "Add Plan"} onClose={() => { setShowModal(false); setEditing(null); setForm(empty); setInitialForm(empty); }} onSubmit={handleSubmit} submitLabel={editing ? "Update" : "Add Plan"} submitLoadingLabel={editing ? "Update" : "Adding..."} isSubmitting={isSubmitDisabled} size="4xl">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Input label="Plan Name" name="name" placeholder="e.g. Gold" value={form.name} onChange={handleChange} required />
           <Input label="Duration" name="duration" placeholder="e.g. 1 Month" value={form.duration} onChange={handleChange} required />

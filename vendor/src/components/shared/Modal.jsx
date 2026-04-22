@@ -49,13 +49,15 @@ const Modal = ({
             </div>
             <div className="bg-gray-50/50 px-8 py-6 border-t border-gray-100">
               {footerContent ?? (
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="w-full bg-purple-600 hover:bg-purple-700 disabled:bg-purple-400 disabled:cursor-not-allowed text-white py-3 rounded-lg font-semibold transition-colors"
-                >
-                  {isSubmitting ? submitLoadingLabel : submitLabel}
-                </button>
+                <div className="flex justify-end">
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="min-w-28 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-400 disabled:cursor-not-allowed text-white px-5 py-2 rounded-lg text-sm font-semibold transition-colors"
+                  >
+                    {isSubmitting ? submitLoadingLabel : submitLabel}
+                  </button>
+                </div>
               )}
             </div>
           </form>
