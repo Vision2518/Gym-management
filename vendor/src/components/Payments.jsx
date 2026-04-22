@@ -31,6 +31,7 @@ const Payments = () => {
   const isDirty = JSON.stringify(form) !== JSON.stringify(initialForm);
   const isSubmitDisabled = isSubmitting || (editing && !isDirty);
   const normalizedSearch = memberSearch.trim().toLowerCase();
+  const paidAmountText = form.paid_amount ? `${form.paid_amount} only` : "";
   const filteredMembers = members
     .filter((member) =>
       member.full_name?.toLowerCase().includes(normalizedSearch),
@@ -162,7 +163,7 @@ const Payments = () => {
           </table>
         )}
       </div>
-
+        
       <Modal show={showModal} title={editing ? "Edit Payment" : "Add Payment"} onClose={() => { setShowModal(false); setEditing(null); setForm(empty); setInitialForm(empty); setMemberSearch(""); }} onSubmit={handleSubmit} submitLabel={editing ? "Update" : "Add Payment"} submitLoadingLabel={editing ? "Update" : "Adding..."} isSubmitting={isSubmitDisabled} size="4xl">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Input
@@ -220,6 +221,7 @@ const Payments = () => {
             readOnly
           />
           <Input label="Paid Amount" name="paid_amount" type="number" placeholder="Amount" value={form.paid_amount} onChange={handleChange} required />
+          
           <Input label="Discount" name="discount" type="number" placeholder="0" value={form.discount} onChange={handleChange} />
           <label className="flex flex-col text-left">
             <span>Payment Method <span className="text-red-500">*</span></span>
@@ -228,6 +230,11 @@ const Payments = () => {
               <option value="card">Card</option>
               <option value="online">Online</option>
             </select>
+            <div className="flex flex-col justify-center items-center">
+            <p className="mt-2 min-h-10  text-lg font-medium text-gray-700">
+              {paidAmountText}
+            </p>
+          </div>
           </label>
           <Input label="Remarks" name="remarks" placeholder="Optional remarks" value={form.remarks} onChange={handleChange} />
         </div>

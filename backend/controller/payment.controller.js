@@ -3,6 +3,7 @@ import fs from "fs";
 import path from "path";
 export const addPayment = async (req, res) => {
   try {
+    const company_id = req.vendor?.company_id;
     const {
       member_id,
       plan_id,
@@ -22,9 +23,10 @@ export const addPayment = async (req, res) => {
     }
 
     // 2. Check if member exists
-    const [member] = await db.query("SELECT * FROM members WHERE id = ?", [
-      member_id,
-    ]);
+    const [member] = await db.query(
+      "SELECT * FROM members WHERE id = ? AND company_id = ?",
+      [member_id, company_id],
+    );
 
     if (member.length === 0) {
       return res.status(404).json({
@@ -35,8 +37,8 @@ export const addPayment = async (req, res) => {
 
     // 3. Check if plan exists
     const [plan] = await db.query(
-      "SELECT * FROM membership_plans WHERE id = ?",
-      [plan_id],
+      "SELECT * FROM membership_plans WHERE id = ? AND company_id = ?",
+      [plan_id, company_id],
     );
 
     if (plan.length === 0) {
@@ -220,6 +222,7 @@ export const getAllPayments = async (req, res) => {
 export const getPaymentsByMemberId = async (req, res) => {
   try {
     const { member_id } = req.params;
+    const company_id = req.vendor?.company_id;
     const [payments] = await db.query(
       `SELECT p.id, p.member_id, m.full_name AS member_name, 
               p.plan_id, pl.name AS plan_name, 
@@ -227,9 +230,9 @@ export const getPaymentsByMemberId = async (req, res) => {
        FROM payments p
        JOIN members m ON p.member_id = m.id
        JOIN membership_plans pl ON p.plan_id = pl.id
-       WHERE p.member_id = ?
+       WHERE p.member_id = ? AND m.company_id = ?
        ORDER BY p.created_at DESC`,
-      [member_id],
+      [member_id, company_id],
     );
 
     if (payments.length === 0) {
@@ -251,6 +254,7 @@ export const getPaymentsByMemberId = async (req, res) => {
 export const updatePayment = async (req, res) => {
   try {
     const { id } = req.params;
+    const company_id = req.vendor?.company_id;
     const {
       member_id,
       plan_id,
@@ -261,9 +265,13 @@ export const updatePayment = async (req, res) => {
     } = req.body;
 
     // 1. Check if payment exists
-    const [existing] = await db.query("SELECT * FROM payments WHERE id = ?", [
-      id,
-    ]);
+    const [existing] = await db.query(
+      `SELECT p.*
+       FROM payments p
+       JOIN members m ON p.member_id = m.id
+       WHERE p.id = ? AND m.company_id = ?`,
+      [id, company_id],
+    );
 
     if (existing.length === 0) {
       return res.status(404).json({
@@ -298,9 +306,10 @@ export const updatePayment = async (req, res) => {
     }
 
     // 4. Validate member exists
-    const [member] = await db.query("SELECT * FROM members WHERE id = ?", [
-      updatedMemberId,
-    ]);
+    const [member] = await db.query(
+      "SELECT * FROM members WHERE id = ? AND company_id = ?",
+      [updatedMemberId, company_id],
+    );
 
     if (member.length === 0) {
       return res.status(404).json({
@@ -311,8 +320,8 @@ export const updatePayment = async (req, res) => {
 
     // 5. Validate plan exists
     const [plan] = await db.query(
-      "SELECT * FROM membership_plans WHERE id = ?",
-      [updatedPlanId],
+      "SELECT * FROM membership_plans WHERE id = ? AND company_id = ?",
+      [updatedPlanId, company_id],
     );
 
     if (plan.length === 0) {
@@ -395,8 +404,8 @@ export const updatePayment = async (req, res) => {
        FROM payments p
        JOIN members m ON p.member_id = m.id
        JOIN membership_plans pl ON p.plan_id = pl.id
-       WHERE p.id = ?`,
-      [id],
+       WHERE p.id = ? AND m.company_id = ?`,
+      [id, company_id],
     );
     // 12. Calculate updated summary
     const [summaryRows] = await db.query(
@@ -433,11 +442,16 @@ export const updatePayment = async (req, res) => {
 export const deletePayment = async (req, res) => {
   try {
     const { id } = req.params;
+    const company_id = req.vendor?.company_id;
 
     // 1. Check if payment exists
-    const [existing] = await db.query("SELECT * FROM payments WHERE id = ?", [
-      id,
-    ]);
+    const [existing] = await db.query(
+      `SELECT p.id
+       FROM payments p
+       JOIN members m ON p.member_id = m.id
+       WHERE p.id = ? AND m.company_id = ?`,
+      [id, company_id],
+    );
 
     if (existing.length === 0) {
       return res.status(404).json({
@@ -447,7 +461,12 @@ export const deletePayment = async (req, res) => {
     }
 
     // 2. Delete payment
-    await db.query("DELETE FROM payments WHERE id = ?", [id]);
+    await db.query(
+      `DELETE p FROM payments p
+       JOIN members m ON p.member_id = m.id
+       WHERE p.id = ? AND m.company_id = ?`,
+      [id, company_id],
+    );
 
     res.status(200).json({
       success: true,
@@ -464,6 +483,7 @@ export const deletePayment = async (req, res) => {
 export const getBillById = async (req, res) => {
   try {
     const { payment_id } = req.params;
+    const company_id = req.vendor?.company_id;
 
     // 1. Fetch payment by payment_id
     const [paymentRows] = await db.query(
@@ -473,8 +493,8 @@ export const getBillById = async (req, res) => {
        JOIN members m ON p.member_id = m.id
        JOIN membership_plans pl ON p.plan_id = pl.id
        JOIN companies c ON m.company_id = c.id
-       WHERE p.id = ?`,
-      [payment_id],
+       WHERE p.id = ? AND m.company_id = ?`,
+      [payment_id, company_id],
     );
 
     if (paymentRows.length === 0) return res.status(404).send("Payment not found");
@@ -521,6 +541,7 @@ export const getBillById = async (req, res) => {
 export const getPaymentHistoryByMemberId = async (req, res) => {
   try {
     const { member_id } = req.params;
+    const company_id = req.vendor?.company_id;
 
     // 1. Validate member_id
     if (!member_id) {
@@ -531,9 +552,10 @@ export const getPaymentHistoryByMemberId = async (req, res) => {
     }
 
     // 2. Check if member exists
-    const [member] = await db.query("SELECT * FROM members WHERE id = ?", [
-      member_id,
-    ]);
+    const [member] = await db.query(
+      "SELECT * FROM members WHERE id = ? AND company_id = ?",
+      [member_id, company_id],
+    );
 
     if (member.length === 0) {
       return res.status(404).json({

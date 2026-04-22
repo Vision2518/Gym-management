@@ -1,6 +1,7 @@
 import db from "../config/db.connect.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+
 export const loginVendor = async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -69,9 +70,9 @@ export const loginVendor = async (req, res) => {
 };
 export const addMemberPlan = async (req, res) => {
   try {
-    const { company_id, name, duration, price } = req.body;
-    console.log(req.body);
-    if ( !company_id || !name || !duration || !price) {
+    const company_id = req.vendor?.company_id;
+    const { name, duration, price } = req.body;
+    if (!company_id || !name || !duration || !price) {
       return res.status(400).json({
         message: "Please fill in all required fields.",
       });
@@ -101,6 +102,7 @@ export const addMemberPlan = async (req, res) => {
 };
 export const getAllPlan = async (req, res) => {
   try {
+    const company_id = req.vendor?.company_id;
     const [rows] = await db.execute(`
       SELECT 
         m.id,
@@ -111,8 +113,9 @@ export const getAllPlan = async (req, res) => {
         m.price
       FROM membership_plans m
       LEFT JOIN companies c ON m.company_id = c.id
+      WHERE m.company_id = ?
       ORDER BY m.id DESC
-    `);
+    `, [company_id]);
     res.status(200).json({
       success: true,
       count: rows.length,
@@ -161,14 +164,15 @@ export const getPlanByCompany = async (req, res) => {
 export const deletePlan = async (req, res) => {
   try {
     const { id } = req.params;
+    const company_id = req.vendor?.company_id;
     const [rows] = await db.execute(
-      "SELECT *FROM membership_plans WHERE id=?",
-      [id],
+      "SELECT * FROM membership_plans WHERE id = ? AND company_id = ?",
+      [id, company_id],
     );
     if (rows.length === 0) {
       return res.status(404).json({ message: "Plan not found." });
     }
-    await db.execute("DELETE FROM membership_plans WHERE id=?", [id]);
+    await db.execute("DELETE FROM membership_plans WHERE id = ? AND company_id = ?", [id, company_id]);
     return res.status(200).json({ message: "Plan deleted successfully." });
   } catch (error) {
     return res
@@ -179,11 +183,11 @@ export const deletePlan = async (req, res) => {
 export const updatePlan = async (req, res) => {
   try {
     const { id } = req.params;
-    const { company_id, name, duration, price } = req.body;
+    const company_id = req.vendor?.company_id;
+    const { name, duration, price } = req.body;
 
     // At least one field must be provided
     if (
-      company_id === undefined &&
       name === undefined &&
       duration === undefined &&
       price === undefined
@@ -195,8 +199,8 @@ export const updatePlan = async (req, res) => {
 
     // Check if plan exists
     const [existingPlan] = await db.query(
-      "SELECT * FROM membership_plans WHERE id = ?",
-      [id]
+      "SELECT * FROM membership_plans WHERE id = ? AND company_id = ?",
+      [id, company_id]
     );
 
     if (existingPlan.length === 0) {
@@ -207,16 +211,13 @@ export const updatePlan = async (req, res) => {
 
     const currentPlan = existingPlan[0];
 
-    const updatedCompanyId = company_id ?? currentPlan.company_id;
+    const updatedCompanyId = currentPlan.company_id;
     const updatedName = name ?? currentPlan.name;
     const updatedDuration = duration ?? currentPlan.duration;
     const updatedPrice = price ?? currentPlan.price;
 
     // Check duplicate plan name only if name/company changes
-    if (
-      (name && name !== currentPlan.name) ||
-      (company_id && company_id !== currentPlan.company_id)
-    ) {
+    if (name && name !== currentPlan.name) {
       const [planExists] = await db.query(
         "SELECT * FROM membership_plans WHERE company_id = ? AND name = ? AND id != ?",
         [updatedCompanyId, updatedName, id]

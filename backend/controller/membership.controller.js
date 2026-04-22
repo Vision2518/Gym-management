@@ -4,8 +4,8 @@ const isValidPhoneNumber = (value) => /^\d{10}$/.test(String(value || "").trim()
 
 export const addMember = async (req, res) => {
   try {
+    const vendorCompanyId = req.vendor?.company_id;
     const {
-      company_id,
       plan_id,
       schedule_id,
       full_name,
@@ -20,7 +20,7 @@ export const addMember = async (req, res) => {
 
     // simple validation
     if (
-      !company_id ||
+      !vendorCompanyId ||
       !schedule_id ||
       !plan_id ||
       !full_name ||
@@ -30,7 +30,7 @@ export const addMember = async (req, res) => {
       return res.status(400).json({
         success: false,
         message:
-          "Company, plan, schedule, full name, phone number, and join date are required.",
+          "Plan, schedule, full name, phone number, and join date are required.",
       });
     }
     if (!isValidPhoneNumber(phone)) {
@@ -56,6 +56,28 @@ export const addMember = async (req, res) => {
         message: "This phone number is already in use.",
       });
     }
+    const [plan] = await db.query(
+      "SELECT id FROM membership_plans WHERE id = ? AND company_id = ?",
+      [plan_id, vendorCompanyId],
+    );
+    if (plan.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Selected membership plan was not found.",
+      });
+    }
+
+    const [schedule] = await db.query(
+      "SELECT id FROM member_schedules WHERE id = ? AND company_id = ?",
+      [schedule_id, vendorCompanyId],
+    );
+    if (schedule.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Selected schedule was not found.",
+      });
+    }
+
     const query = `
       INSERT INTO members
       (company_id,plan_id,schedule_id,full_name, phone, email, gender, age, address, join_date, status)
@@ -63,7 +85,7 @@ export const addMember = async (req, res) => {
     `;
 
     const [result] = await db.query(query, [
-      company_id,
+      vendorCompanyId,
       plan_id,
       schedule_id,
       full_name,
@@ -92,6 +114,7 @@ export const addMember = async (req, res) => {
 export const getMemberById = async (req, res) => {
   try {
     const { id } = req.params;
+    const company_id = req.vendor?.company_id;
 
     const [member] = await db.query(
       `SELECT 
@@ -111,8 +134,8 @@ export const getMemberById = async (req, res) => {
         mp.price
       FROM members m
       LEFT JOIN membership_plans mp ON m.plan_id = mp.id
-      WHERE m.id = ?`,
-      [id],
+      WHERE m.id = ? AND m.company_id = ?`,
+      [id, company_id],
     );
 
     if (member.length === 0) {
@@ -166,11 +189,12 @@ export const getMembersByCompany = async (req, res) => {
 export const deleteMember = async (req, res) => {
   try {
     const { id } = req.params;
-    const [rows] = await db.execute("SELECT *FROM members WHERE id=?", [id]);
+    const company_id = req.vendor?.company_id;
+    const [rows] = await db.execute("SELECT * FROM members WHERE id = ? AND company_id = ?", [id, company_id]);
     if (rows.length === 0) {
       return res.status(404).json({ message: "Member not found." });
     }
-    await db.execute("DELETE FROM members WHERE id=?", [id]);
+    await db.execute("DELETE FROM members WHERE id = ? AND company_id = ?", [id, company_id]);
     res.status(200).json({ message: "Member deleted successfully." });
   } catch (error) {
     res.status(500).json({ message: "Unable to delete the member right now. Please try again later." });
@@ -179,9 +203,9 @@ export const deleteMember = async (req, res) => {
 export const updateMember = async (req, res, next) => {
   try {
     const { id } = req.params;
+    const vendorCompanyId = req.vendor?.company_id;
     const {
       full_name,
-      company_id,
       email,
       phone,
       gender,
@@ -197,7 +221,7 @@ export const updateMember = async (req, res, next) => {
       id,
     ]);
 
-    if (existing.length === 0) {
+    if (existing.length === 0 || existing[0].company_id !== vendorCompanyId) {
       return res.status(404).json({
         success: false,
           message: "Member not found.",
@@ -207,7 +231,7 @@ export const updateMember = async (req, res, next) => {
     const oldMember = existing[0];
     // 2. Keep old values if new ones not provided
     const updatedFullName = full_name || oldMember.full_name;
-    const updatedCompanyId = company_id || oldMember.company_id;
+    const updatedCompanyId = oldMember.company_id;
     const updatedEmail = email || oldMember.email;
     const updatedPhone = phone || oldMember.phone;
     const updatedAddress = address || oldMember.address;
@@ -227,14 +251,28 @@ export const updateMember = async (req, res, next) => {
     // 3. Optional: Check if plan exists if plan_id changed
     if (plan_id && plan_id !== oldMember.plan_id) {
       const [plan] = await db.query(
-        "SELECT * FROM membership_plans WHERE id = ?",
-        [plan_id],
+        "SELECT * FROM membership_plans WHERE id = ? AND company_id = ?",
+        [plan_id, vendorCompanyId],
       );
 
       if (plan.length === 0) {
         return res.status(404).json({
           success: false,
           message: "Selected membership plan was not found.",
+        });
+      }
+    }
+
+    if (schedule_id && schedule_id !== oldMember.schedule_id) {
+      const [schedule] = await db.query(
+        "SELECT * FROM member_schedules WHERE id = ? AND company_id = ?",
+        [schedule_id, vendorCompanyId],
+      );
+
+      if (schedule.length === 0) {
+        return res.status(404).json({
+          success: false,
+          message: "Selected schedule was not found.",
         });
       }
     }
@@ -325,8 +363,10 @@ export const addMemberSchedule = async (req, res) => {
 };
 export const getAllMemberSchedules = async (req, res) => {
   try {
+    const company_id = req.vendor?.company_id;
     const [schedules] = await db.query(
-      "SELECT * FROM member_schedules ORDER BY id DESC",
+      "SELECT * FROM member_schedules WHERE company_id = ? ORDER BY id DESC",
+      [company_id],
     );
 
     res.status(200).json({
@@ -345,14 +385,27 @@ export const getAllMemberSchedules = async (req, res) => {
 export const deleteSchedule = async (req, res) => {
   try {
     const { id } = req.params;
+    const company_id = req.vendor?.company_id;
     const [rows] = await db.execute(
-      "SELECT * FROM member_schedules WHERE id=?",
-      [id],
+      "SELECT * FROM member_schedules WHERE id = ? AND company_id = ?",
+      [id, company_id],
     );
     if (rows.length === 0) {
       return res.status(404).json({ message: "Schedule not found." });
     }
-    await db.execute("DELETE FROM member_schedules WHERE id=?", [id]);
+
+    const [membersUsingSchedule] = await db.execute(
+      "SELECT id FROM members WHERE schedule_id = ? AND company_id = ? LIMIT 1",
+      [id, company_id],
+    );
+
+    if (membersUsingSchedule.length > 0) {
+      return res.status(400).json({
+        message: "Schedule is used by member, cannot delete.",
+      });
+    }
+
+    await db.execute("DELETE FROM member_schedules WHERE id = ? AND company_id = ?", [id, company_id]);
     return res.status(200).json({ message: "Schedule deleted successfully." });
   } catch (error) {
     return res
@@ -375,8 +428,8 @@ export const updateSchedule = async (req, res) => {
 
     // Check if schedule exists
     const [existing] = await db.query(
-      "SELECT * FROM member_schedules WHERE id = ?",
-      [id],
+      "SELECT * FROM member_schedules WHERE id = ? AND company_id = ?",
+      [id, company_id],
     );
 
     if (existing.length === 0) {
