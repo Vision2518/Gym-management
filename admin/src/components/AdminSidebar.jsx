@@ -22,8 +22,8 @@ const AdminSidebar = () => {
   };
 
   return (
-    <aside className="w-64 min-h-screen bg-slate-950 text-white flex flex-col border-r border-white/5">
-      <div className="p-8 text-2xl font-extrabold border-b border-white/5 text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-orange-500">
+    <aside className="w-64 min-h-screen bg-slate-950 text-white flex flex-col">
+      <div className="p-8 text-2xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-orange-500">
         Admin Panel
       </div>
       <nav className="flex-1 p-6 space-y-2">
@@ -43,7 +43,7 @@ const AdminSidebar = () => {
           </NavLink>
         ))}
       </nav>
-      <div className="p-6 border-t border-white/5">
+      <div className="p-6">
         <button
           onClick={handleSignout}
           className="w-full px-4 py-3 bg-red-600/10 text-red-500 hover:bg-red-600 hover:text-white rounded-xl font-bold transition-all duration-200"

@@ -35,7 +35,7 @@ const Login = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-purple-950 to-slate-900 p-8">
       <div className="w-full max-w-md">
-        <div className="bg-white/10 backdrop-blur-xl rounded-2xl p-8 shadow-2xl border border-white/5">
+        <div className="bg-white/10 backdrop-blur-xl rounded-2xl p-0 shadow-2xl">
           <div className="text-center mb-8">
             <h1 className="text-3xl font-bold text-white mb-2">Vendor Login</h1>
             <p className="text-purple-200">Access your vendor dashboard</p>

@@ -33,7 +33,7 @@ export const loginAdmin = async (req, res) => {
     const isMatch = await bcrypt.compare(password, admin.password);
 
     if (!isMatch) {
-      return res.status(401).json({ message: "Incorrect email or password." });
+      return res.status(401).json({ message: "Invalid Credentials" });
     }
 
     // 3. token generate

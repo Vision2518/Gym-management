@@ -134,7 +134,7 @@ const Payments = () => {
 
       <div className="bg-white/10 backdrop-blur rounded-2xl overflow-hidden shadow-xl">
         {isLoading ? <p className="text-purple-200 p-8 text-center">Loading...</p>
-          : isError ? <p className="text-red-400 p-8 text-center">Failed to load payments.</p>
+          : isError ? <p className="text-yellow-400 p-8 text-center">Failed to load payments.</p>
           : (
           <table className="w-full text-sm text-left text-white">
             <thead className="bg-white/10 text-purple-200 uppercase text-xs">

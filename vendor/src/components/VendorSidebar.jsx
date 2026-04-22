@@ -35,8 +35,8 @@ const VendorSidebar = () => {
   };
 
   return (
-    <aside className="w-64 min-h-screen bg-slate-950 text-white flex flex-col border-r border-white/5">
-      <div className="p-8 text-2xl font-extrabold border-b border-white/5 text-transparent bg-clip-text bg-gradient-to-r from-purple-500 to-pink-500">
+    <aside className="w-64 min-h-screen bg-slate-950 text-white flex flex-col">
+      <div className="p-8 text-2xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-purple-500 to-pink-500">
         Vendor Panel
       </div>
       <nav className="flex-1 p-4 space-y-1">
@@ -57,7 +57,7 @@ const VendorSidebar = () => {
           </NavLink>
         ))}
       </nav>
-      <div className="p-4 border-t border-white/5">
+      <div className="p-4">
         <button
           onClick={handleSignout}
           className="w-full flex items-center gap-3 px-4 py-3 bg-purple-600/10 text-purple-400 hover:bg-purple-600 hover:text-white rounded-xl font-bold transition-all duration-200"

@@ -27,7 +27,7 @@ export const loginVendor = async (req, res) => {
     // 2. Compare password
     const isMatch = await bcrypt.compare(password, vendor.password);
     if (!isMatch) {
-      return res.status(401).json({ message: "Incorrect email or password." });
+      return res.status(401).json({ message: "Invalid Credentials" });
     }
     // 3. Generate token
     const token = jwt.sign(

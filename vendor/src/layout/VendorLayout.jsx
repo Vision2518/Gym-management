@@ -11,7 +11,7 @@ const VendorLayout = () => {
   return (
     <div className="flex min-h-screen">
       <VendorSidebar />
-      <main className="flex-1 bg-gray-100 p-6">
+      <main className="flex-1 bg-gray-100">
         <Outlet />
       </main>
     </div>
