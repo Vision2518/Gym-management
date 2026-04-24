@@ -110,10 +110,13 @@ export const getAllPlan = async (req, res) => {
         c.name AS company_name,
         m.name AS plan_name,
         m.duration,
-        m.price
+        m.price,
+        COUNT(mem.id) AS member_count
       FROM membership_plans m
       LEFT JOIN companies c ON m.company_id = c.id
+      LEFT JOIN members mem ON mem.plan_id = m.id AND mem.company_id = m.company_id
       WHERE m.company_id = ?
+      GROUP BY m.id, m.company_id, c.name, m.name, m.duration, m.price
       ORDER BY m.id DESC
     `, [company_id]);
     res.status(200).json({
@@ -140,10 +143,13 @@ export const getPlanByCompany = async (req, res) => {
         c.name AS company_name,
         m.name AS plan_name,
         m.duration,
-        m.price
+        m.price,
+        COUNT(mem.id) AS member_count
        FROM membership_plans m
        JOIN companies c ON m.company_id = c.id
+       LEFT JOIN members mem ON mem.plan_id = m.id AND mem.company_id = m.company_id
        WHERE m.company_id = ?
+       GROUP BY m.id, m.company_id, c.name, m.name, m.duration, m.price
        ORDER BY m.id DESC`,
       [company_id]
     );
@@ -171,6 +177,15 @@ export const deletePlan = async (req, res) => {
     );
     if (rows.length === 0) {
       return res.status(404).json({ message: "Plan not found." });
+    }
+    const [membersUsingPlan] = await db.execute(
+      "SELECT id FROM members WHERE plan_id = ? AND company_id = ? LIMIT 1",
+      [id, company_id],
+    );
+    if (membersUsingPlan.length > 0) {
+      return res.status(400).json({
+        message: "Plan is assigned to members, so it cannot be deleted.",
+      });
     }
     await db.execute("DELETE FROM membership_plans WHERE id = ? AND company_id = ?", [id, company_id]);
     return res.status(200).json({ message: "Plan deleted successfully." });

@@ -58,6 +58,11 @@ const Plans = () => {
   };
 
   const openDelete = (plan) => {
+    const memberCount = Number(plan.member_count || 0);
+    if (memberCount > 0) {
+      toast.error("This plan cannot be deleted because members are enrolled in it.");
+      return;
+    }
     setDeletingPlan(plan);
     setShowDeleteModal(true);
   };
@@ -87,23 +92,36 @@ const Plans = () => {
           : (
           <table className="w-full text-sm text-left text-white">
             <thead className="bg-white/10 text-purple-200 uppercase text-xs">
-              <tr>{["#", "Plan Name", "Duration", "Price (Rs)", "Actions"].map(h => <th key={h} className="px-6 py-4">{h}</th>)}</tr>
+              <tr>{["#", "Plan Name", "Duration", "Price (Rs)", "Members", "Actions"].map(h => <th key={h} className="px-6 py-4">{h}</th>)}</tr>
             </thead>
             <tbody>
               {plans.length === 0
-                ? <tr><td colSpan={5} className="text-center py-8 text-purple-300">No plans found</td></tr>
-                : plans.map((p, i) => (
+                ? <tr><td colSpan={6} className="text-center py-8 text-purple-300">No plans found</td></tr>
+                : plans.map((p, i) => {
+                    const memberCount = Number(p.member_count || 0);
+                    const isDeleteDisabled = isDeletingPlan || memberCount > 0;
+
+                    return (
                   <tr key={p.id} className="border-t border-white/10 hover:bg-white/5 transition-colors">
                     <td className="px-6 py-4">{i + 1}</td>
                     <td className="px-6 py-4 font-medium">{p.plan_name}</td>
                     <td className="px-6 py-4">{p.duration}</td>
                     <td className="px-6 py-4">Rs {p.price}</td>
+                    <td className="px-6 py-4">{memberCount}</td>
                     <td className="px-6 py-4 flex gap-3">
                       <button onClick={() => openEdit(p)} className="text-yellow-400 hover:text-yellow-300"><FaEdit size={16} /></button>
-                      <button onClick={() => openDelete(p)} disabled={isDeletingPlan} className="text-red-400 hover:text-red-300 disabled:text-red-200 disabled:cursor-not-allowed"><FaTrash size={16} /></button>
+                      <button
+                        onClick={() => openDelete(p)}
+                        disabled={isDeleteDisabled}
+                        title={memberCount > 0 ? "Cannot delete a plan with enrolled members" : "Delete plan"}
+                        className="text-red-400 hover:text-red-300 disabled:text-red-200 disabled:cursor-not-allowed"
+                      >
+                        <FaTrash size={16} />
+                      </button>
                     </td>
                   </tr>
-                ))}
+                    );
+                  })}
             </tbody>
           </table>
         )}
