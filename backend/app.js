@@ -1,31 +1,40 @@
 import express from "express";
-import dotenv from "dotenv";
-import cors from "cors";
-import db from "./config/db.connect.js";
-import authRouter from "./routes/auth.route.js";
 import cookieParser from "cookie-parser";
+import authRouter from "./routes/auth.route.js";
 import { vendorRouter } from "./routes/vendor.route.js";
 import { memberRouter } from "./routes/member.route.js";
 import { paymentRouter } from "./routes/payment.route.js";
-dotenv.config();
+import corsMiddleware from "./middlewares/cors.js";
+
 const app = express();
-app.use(cors({
-  origin: ['http://localhost:5173', 'http://localhost:3000', 'http://localhost:3001', 'http://localhost:3002'],
-  credentials: true
-}));
+
+app.use(corsMiddleware);
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
+
+app.get("/health", (_req, res) => {
+  res.status(200).json({ success: true, message: "Server is healthy." });
+});
+
 app.use("/api/auth", authRouter);
 app.use("/api/vendor", vendorRouter);
 app.use("/api/member", memberRouter);
 app.use("/api/payment", paymentRouter);
-const PORT = process.env.PORT || 4000;
-try {
-  db.connect();
-  console.log("MYsql connected successfully");
-} catch (error) {
-  console.log("Error in DB connection", error.message);
-}
-app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
+
+app.use((req, res) => {
+  res.status(404).json({
+    success: false,
+    message: `Route not found: ${req.method} ${req.originalUrl}`,
+  });
 });
+
+app.use((err, _req, res, _next) => {
+  console.error("Unhandled application error:", err);
+  res.status(err.status || 500).json({
+    success: false,
+    message: err.message || "Internal server error.",
+  });
+});
+
+export default app;

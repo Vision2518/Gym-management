@@ -1,5 +1,4 @@
 import express from "express";
-import {} from "../controller/vendor.controller.js";
 import { isVendor } from "../middlewares/isLogin.js";
 import authorizeRoles from "../middlewares/isAuth.js";
 import {
@@ -13,7 +12,7 @@ import {
   getSchedulesByCompany,
   updateMember,
   updateSchedule,
-} from "../controller/membership.controller.js";
+} from "../controllers/membership.controller.js";
 export const memberRouter = express.Router();
 memberRouter.post("/add-member", isVendor, authorizeRoles("vendor"), addMember);
 memberRouter.get(

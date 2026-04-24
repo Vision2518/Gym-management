@@ -7,8 +7,8 @@ import {
   deletePlan,
   updatePlan,
   getVendorStats,
-} from "../controller/vendor.controller.js";
-import { signout } from "../controller/auth.controlller.js";
+} from "../controllers/vendor.controller.js";
+import { signout } from "../controllers/auth.controller.js";
 import { isVendor } from "../middlewares/isLogin.js";
 import authorizeRoles from "../middlewares/isAuth.js";
 export const vendorRouter = express.Router();

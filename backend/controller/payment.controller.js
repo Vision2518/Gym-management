@@ -1,6 +1,11 @@
 import db from "../config/db.connect.js";
 import fs from "fs";
 import path from "path";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const billTemplatePath = path.resolve(__dirname, "../utils/bill.html");
 
 const isValidDateInput = (value) =>
   typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value);
@@ -534,7 +539,7 @@ export const getBillById = async (req, res) => {
       (paymentData.discount || 0);
 
     // 2. Read HTML template
-    let template = fs.readFileSync(path.join("utils", "bill.html"), "utf-8");
+    let template = fs.readFileSync(billTemplatePath, "utf-8");
 
     // 3. Replace placeholders
     template = template

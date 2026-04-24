@@ -9,7 +9,7 @@ import {
   getPaymentHistoryByMemberId,
   getPaymentsByMemberId,
   updatePayment,
-} from "../controller/payment.controller.js";
+} from "../controllers/payment.controller.js";
 export const paymentRouter = express.Router();
 paymentRouter.post(
   "/addpayment",

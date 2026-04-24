@@ -11,7 +11,7 @@ import {
   deleteCompany,
   updateCompany,
   getDashboardStats,
-} from "../controller/auth.controlller.js";
+} from "../controllers/auth.controller.js";
 import { isSuperAdmin } from "../middlewares/isLogin.js";
 import authorizeRoles from "../middlewares/isAuth.js";
 const authRouter = express.Router();
