@@ -42,6 +42,7 @@ const Payments = () => {
   const [form, setForm] = useState(empty);
   const [initialForm, setInitialForm] = useState(empty);
   const [memberSearch, setMemberSearch] = useState("");
+  const [paymentSearch, setPaymentSearch] = useState("");
   const [selectedMemberData, setSelectedMemberData] = useState(null);
   const [selectedPlanName, setSelectedPlanName] = useState("");
 
@@ -52,7 +53,24 @@ const Payments = () => {
   const isDirty = JSON.stringify(form) !== JSON.stringify(initialForm);
   const isSubmitDisabled = isSubmitting || (editing && !isDirty);
   const normalizedSearch = memberSearch.trim().toLowerCase();
+  const normalizedPaymentSearch = paymentSearch.trim().toLowerCase();
   const paidAmountText = form.paid_amount ? `${form.paid_amount} only` : "";
+  const filteredPayments = useMemo(() => payments.filter((payment) => {
+    if (!normalizedPaymentSearch) return true;
+
+    const linkedMember = members.find(
+      (member) => String(member.id) === String(payment.member_id),
+    );
+    const memberName = String(payment.member_name || linkedMember?.full_name || "").toLowerCase();
+    const memberPhone = String(linkedMember?.phone || "").toLowerCase();
+    const memberEmail = String(linkedMember?.email || "").toLowerCase();
+
+    return (
+      memberName.includes(normalizedPaymentSearch) ||
+      memberPhone.includes(normalizedPaymentSearch) ||
+      memberEmail.includes(normalizedPaymentSearch)
+    );
+  }), [members, normalizedPaymentSearch, payments]);
   const filteredMembers = useMemo(() => {
     return members
       .filter((member) => {
@@ -263,6 +281,16 @@ const Payments = () => {
         </button>
       </div>
 
+      <div className="mb-6">
+        <input
+          type="text"
+          value={paymentSearch}
+          onChange={(e) => setPaymentSearch(e.target.value)}
+          placeholder="Search payments by member name, phone, or email"
+          className="w-full max-w-md rounded-xl border border-white/20 bg-white/10 px-4 py-3 text-white placeholder:text-purple-200/70 outline-none transition focus:border-purple-400 focus:bg-white/15"
+        />
+      </div>
+
       <div className="bg-white/10 backdrop-blur rounded-2xl overflow-hidden shadow-xl">
         {isLoading ? (
           <p className="text-purple-200 p-8 text-center">Loading...</p>
@@ -290,14 +318,14 @@ const Payments = () => {
               </tr>
             </thead>
             <tbody>
-              {payments.length === 0 ? (
+              {filteredPayments.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="text-center py-8 text-purple-300">
                     No payments found
                   </td>
                 </tr>
               ) : (
-                payments.map((p, i) => (
+                filteredPayments.map((p, i) => (
                   <tr
                     key={p.id}
                     className="border-t border-white/10 hover:bg-white/5 transition-colors"

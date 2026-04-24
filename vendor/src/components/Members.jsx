@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { FaPlus, FaEdit, FaTrash, FaEye } from "react-icons/fa";
 import { toast } from "react-toastify";
 import Modal from "./shared/Modal";
@@ -9,12 +9,24 @@ import {
   useAddMemberMutation,
   useUpdateMemberMutation,
   useDeleteMemberMutation,
+  useGetPaymentHistoryQuery,
 } from "../redux/features/authSlice";
 import { useGetSchedulesByCompanyQuery, useGetPlansByCompanyQuery } from "../redux/features/authSlice";
 
 const phoneRegex = /^\d{10}$/;
 
 const empty = { full_name: "", phone: "", email: "", gender: "", age: "", address: "", join_date: "", status: "active", plan_id: "", schedule_id: "", company_id: "" };
+
+const formatCurrency = (value) => {
+  const amount = Number(value ?? 0);
+  return Number.isFinite(amount) ? `Rs. ${amount.toLocaleString()}` : "Rs. 0";
+};
+
+const formatDate = (value) => {
+  if (!value) return "-";
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? "-" : date.toISOString().split("T")[0];
+};
 
 const getVendorCompanyId = () => {
   const token = localStorage.getItem("authToken");
@@ -44,10 +56,33 @@ const Members = () => {
   const [deletingMember, setDeletingMember] = useState(null);
   const [form, setForm] = useState(empty);
   const [initialForm, setInitialForm] = useState(empty);
+  const [searchTerm, setSearchTerm] = useState("");
+  const {
+    data: paymentHistoryData,
+    isFetching: isPaymentHistoryLoading,
+    isError: isPaymentHistoryError,
+  } = useGetPaymentHistoryQuery(viewingMember?.id, {
+    skip: !viewingMember?.id || !showViewModal,
+  });
 
   const members = data?.members || [];
   const schedules = schedulesData?.schedules || [];
   const plans = plansData?.plans || [];
+  const paymentHistory = paymentHistoryData?.payment_history || [];
+  const normalizedSearchTerm = searchTerm.trim().toLowerCase();
+  const filteredMembers = useMemo(() => members.filter((member) => {
+    if (!normalizedSearchTerm) return true;
+
+    const memberName = String(member.full_name || "").toLowerCase();
+    const memberPhone = String(member.phone || "").toLowerCase();
+    const memberEmail = String(member.email || "").toLowerCase();
+
+    return (
+      memberName.includes(normalizedSearchTerm) ||
+      memberPhone.includes(normalizedSearchTerm) ||
+      memberEmail.includes(normalizedSearchTerm)
+    );
+  }), [members, normalizedSearchTerm]);
   const isSubmitting = isAddingMember || isUpdatingMember;
   const isDirty = JSON.stringify(form) !== JSON.stringify(initialForm);
   const isSubmitDisabled = isSubmitting || (editing && !isDirty);
@@ -120,6 +155,14 @@ const Members = () => {
   const selectedViewSchedule = schedules.find(
     (schedule) => String(schedule.id) === String(viewingMember?.schedule_id),
   );
+  const paymentTotals = useMemo(() => paymentHistory.reduce(
+    (acc, item) => {
+      acc.totalPaid += Number(item.total_paid || 0);
+      acc.totalDue += Number(item.remaining_amount || 0);
+      return acc;
+    },
+    { totalPaid: 0, totalDue: 0 },
+  ), [paymentHistory]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-950 to-slate-900 p-8">
@@ -128,6 +171,16 @@ const Members = () => {
         <button onClick={openAdd} className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg transition-colors">
          Add Member
         </button>
+      </div>
+
+      <div className="mb-6">
+        <input
+          type="text"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          placeholder="Search members by name, phone, or email"
+          className="w-full max-w-md rounded-xl border border-white/20 bg-white/10 px-4 py-3 text-white placeholder:text-purple-200/70 outline-none transition focus:border-purple-400 focus:bg-white/15"
+        />
       </div>
 
       <div className="bg-white/10 backdrop-blur rounded-2xl overflow-hidden shadow-xl">
@@ -139,9 +192,9 @@ const Members = () => {
               <tr>{["#", "Name", "Phone", "Email", "Gender", "Status", "Actions"].map(h => <th key={h} className="px-6 py-4">{h}</th>)}</tr>
             </thead>
             <tbody>
-              {members.length === 0
+              {filteredMembers.length === 0
                 ? <tr><td colSpan={7} className="text-center py-8 text-purple-300">No members found</td></tr>
-                : members.map((m, i) => (
+                : filteredMembers.map((m, i) => (
                   <tr key={m.id} className="border-t border-white/10 hover:bg-white/5 transition-colors">
                     <td className="px-6 py-4">{i + 1}</td>
                     <td className="px-6 py-4 font-medium">{m.full_name}</td>
@@ -218,51 +271,140 @@ const Members = () => {
           </button>
         }
       >
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="space-y-1">
-            <p className="text-sm font-medium text-gray-500">Full Name</p>
-            <p className="text-base font-semibold text-gray-900">{viewingMember?.full_name || "-"}</p>
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="space-y-1">
+              <p className="text-sm font-medium text-gray-500">Full Name</p>
+              <p className="text-base font-semibold text-gray-900">{viewingMember?.full_name || "-"}</p>
+            </div>
+            <div className="space-y-1">
+              <p className="text-sm font-medium text-gray-500">Phone</p>
+              <p className="text-base font-semibold text-gray-900">{viewingMember?.phone || "-"}</p>
+            </div>
+            <div className="space-y-1">
+              <p className="text-sm font-medium text-gray-500">Email</p>
+              <p className="text-base font-semibold text-gray-900">{viewingMember?.email || "-"}</p>
+            </div>
+            <div className="space-y-1">
+              <p className="text-sm font-medium text-gray-500">Age</p>
+              <p className="text-base font-semibold text-gray-900">{viewingMember?.age || "-"}</p>
+            </div>
+            <div className="space-y-1">
+              <p className="text-sm font-medium text-gray-500">Gender</p>
+              <p className="text-base font-semibold text-gray-900">{viewingMember?.gender || "-"}</p>
+            </div>
+            <div className="space-y-1">
+              <p className="text-sm font-medium text-gray-500">Join Date</p>
+              <p className="text-base font-semibold text-gray-900">{viewingMember?.join_date?.split("T")[0] || "-"}</p>
+            </div>
+            <div className="space-y-1">
+              <p className="text-sm font-medium text-gray-500">Status</p>
+              <p className="text-base font-semibold text-gray-900 capitalize">{viewingMember?.status || "-"}</p>
+            </div>
+            <div className="space-y-1">
+              <p className="text-sm font-medium text-gray-500">Plan</p>
+              <p className="text-base font-semibold text-gray-900">{selectedViewPlan?.plan_name || "-"}</p>
+            </div>
+            <div className="space-y-1">
+              <p className="text-sm font-medium text-gray-500">Schedule</p>
+              <p className="text-base font-semibold text-gray-900">
+                {selectedViewSchedule
+                  ? `${selectedViewSchedule.start_time} - ${selectedViewSchedule.end_time}`
+                  : "-"}
+              </p>
+            </div>
           </div>
-          <div className="space-y-1">
-            <p className="text-sm font-medium text-gray-500">Phone</p>
-            <p className="text-base font-semibold text-gray-900">{viewingMember?.phone || "-"}</p>
+          <div className="space-y-1 pt-2">
+            <p className="text-sm font-medium text-gray-500">Address</p>
+            <p className="text-base font-semibold text-gray-900">{viewingMember?.address || "-"}</p>
           </div>
-          <div className="space-y-1">
-            <p className="text-sm font-medium text-gray-500">Email</p>
-            <p className="text-base font-semibold text-gray-900">{viewingMember?.email || "-"}</p>
+
+          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 space-y-4">
+            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+              <div>
+                <p className="text-lg font-semibold text-slate-900">Payment Summary</p>
+                <p className="text-sm text-slate-500">History, paid amount, and pending due for this member.</p>
+              </div>
+              <div className="grid grid-cols-2 gap-3 md:min-w-[320px]">
+                <div className="rounded-xl bg-white p-3 shadow-sm">
+                  <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Total Paid</p>
+                  <p className="mt-1 text-lg font-bold text-emerald-600">{formatCurrency(paymentTotals.totalPaid)}</p>
+                </div>
+                <div className="rounded-xl bg-white p-3 shadow-sm">
+                  <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Total Due</p>
+                  <p className="mt-1 text-lg font-bold text-rose-600">{formatCurrency(paymentTotals.totalDue)}</p>
+                </div>
+              </div>
+            </div>
+
+            {isPaymentHistoryLoading ? (
+              <p className="rounded-xl bg-white px-4 py-6 text-center text-sm text-slate-500">Loading payment history...</p>
+            ) : isPaymentHistoryError ? (
+              <p className="rounded-xl bg-red-50 px-4 py-6 text-center text-sm text-red-600">Failed to load payment history.</p>
+            ) : paymentHistory.length === 0 ? (
+              <p className="rounded-xl bg-white px-4 py-6 text-center text-sm text-slate-500">No payment history found for this member.</p>
+            ) : (
+              <div className="space-y-4">
+                {paymentHistory.map((item) => (
+                  <div key={item.plan_id} className="rounded-2xl bg-white p-4 shadow-sm border border-slate-100">
+                    <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                      <div className="space-y-1">
+                        <p className="text-base font-semibold text-slate-900">{item.plan_name || "Plan"}</p>
+                        <p className="text-sm text-slate-500">
+                          Plan Price: {formatCurrency(item.plan_price)} | Discount: {formatCurrency(item.discount)}
+                        </p>
+                      </div>
+                      <span className={`inline-flex w-fit rounded-full px-3 py-1 text-xs font-semibold ${
+                        Number(item.remaining_amount) === 0
+                          ? "bg-emerald-100 text-emerald-700"
+                          : "bg-amber-100 text-amber-700"
+                      }`}>
+                        {item.payment_status}
+                      </span>
+                    </div>
+
+                    <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-3">
+                      <div className="rounded-xl bg-slate-50 p-3">
+                        <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Payable</p>
+                        <p className="mt-1 text-base font-bold text-slate-900">{formatCurrency(item.payable_amount)}</p>
+                      </div>
+                      <div className="rounded-xl bg-emerald-50 p-3">
+                        <p className="text-xs font-medium uppercase tracking-wide text-emerald-700">Paid</p>
+                        <p className="mt-1 text-base font-bold text-emerald-700">{formatCurrency(item.total_paid)}</p>
+                      </div>
+                      <div className="rounded-xl bg-rose-50 p-3">
+                        <p className="text-xs font-medium uppercase tracking-wide text-rose-700">Due</p>
+                        <p className="mt-1 text-base font-bold text-rose-700">{formatCurrency(item.remaining_amount)}</p>
+                      </div>
+                    </div>
+
+                    <div className="mt-4 overflow-x-auto">
+                      <table className="min-w-full text-sm">
+                        <thead>
+                          <tr className="border-b border-slate-200 text-left text-slate-500">
+                            <th className="px-3 py-2 font-medium">Date</th>
+                            <th className="px-3 py-2 font-medium">Amount</th>
+                            <th className="px-3 py-2 font-medium">Method</th>
+                            <th className="px-3 py-2 font-medium">Remarks</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {item.payments.map((payment) => (
+                            <tr key={payment.id} className="border-b border-slate-100 last:border-b-0">
+                              <td className="px-3 py-2 text-slate-700">{formatDate(payment.created_at)}</td>
+                              <td className="px-3 py-2 font-semibold text-slate-900">{formatCurrency(payment.paid_amount)}</td>
+                              <td className="px-3 py-2 capitalize text-slate-700">{payment.payment_method || "-"}</td>
+                              <td className="px-3 py-2 text-slate-600">{payment.remarks || "-"}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
-          <div className="space-y-1">
-            <p className="text-sm font-medium text-gray-500">Age</p>
-            <p className="text-base font-semibold text-gray-900">{viewingMember?.age || "-"}</p>
-          </div>
-          <div className="space-y-1">
-            <p className="text-sm font-medium text-gray-500">Gender</p>
-            <p className="text-base font-semibold text-gray-900">{viewingMember?.gender || "-"}</p>
-          </div>
-          <div className="space-y-1">
-            <p className="text-sm font-medium text-gray-500">Join Date</p>
-            <p className="text-base font-semibold text-gray-900">{viewingMember?.join_date?.split("T")[0] || "-"}</p>
-          </div>
-          <div className="space-y-1">
-            <p className="text-sm font-medium text-gray-500">Status</p>
-            <p className="text-base font-semibold text-gray-900 capitalize">{viewingMember?.status || "-"}</p>
-          </div>
-          <div className="space-y-1">
-            <p className="text-sm font-medium text-gray-500">Plan</p>
-            <p className="text-base font-semibold text-gray-900">{selectedViewPlan?.plan_name || "-"}</p>
-          </div>
-          <div className="space-y-1">
-            <p className="text-sm font-medium text-gray-500">Schedule</p>
-            <p className="text-base font-semibold text-gray-900">
-              {selectedViewSchedule
-                ? `${selectedViewSchedule.start_time} - ${selectedViewSchedule.end_time}`
-                : "-"}
-            </p>
-          </div>
-        </div>
-        <div className="space-y-1 pt-2">
-          <p className="text-sm font-medium text-gray-500">Address</p>
-          <p className="text-base font-semibold text-gray-900">{viewingMember?.address || "-"}</p>
         </div>
       </Modal>
 
