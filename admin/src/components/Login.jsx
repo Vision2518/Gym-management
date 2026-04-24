@@ -10,6 +10,8 @@ import { useDispatch } from "react-redux";
 import { setUser } from "../redux/features/authState";
 import { getErrorMessage } from "../utils/toastMessage";
 
+const vendorDashboardUrl = import.meta.env.VITE_VENDOR_DASHBOARD_URL || "";
+
 const GymVendorLogin = ({ role = "admin" }) => {
   const isAdmin = role === "admin";
   const navigate = useNavigate();
@@ -43,7 +45,13 @@ const GymVendorLogin = ({ role = "admin" }) => {
       dispatch(setUser({ email: decoded.email, role: decoded.role }));
 
       if (decoded.role === "super_admin") navigate("/admin/dashboard");
-      else if (decoded.role === "vendor") navigate("/vendor/dashboard");
+      else if (decoded.role === "vendor") {
+        if (vendorDashboardUrl) {
+          window.location.href = vendorDashboardUrl;
+        } else {
+          navigate("/vendor/dashboard");
+        }
+      }
       else toast.error("Login failed. Unknown user role.");
     } catch (err) {
       toast.error(

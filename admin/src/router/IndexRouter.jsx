@@ -1,12 +1,11 @@
 import { createBrowserRouter } from "react-router-dom";
 import { adminRoutes } from "./AdminRoutes";
-import { vendorRoutes } from "../../../vendor/src/router/VendorRoutes";
 import AdminLayout from "../layout/AdminLayout";
-import VendorLayout from "../../../vendor/src/layout/VendorLayout";
+import VendorLayout from "../layout/VendorLayout";
 import Login from "../components/Login";
-import Guard from "./Guard";
 import ErrorPage from "../components/ErrorPage";
 import NotFoundPage from "../components/NotFoundPage";
+import VendorRedirect from "../components/VendorRedirect";
 
 export const router = createBrowserRouter([
   {
@@ -29,7 +28,7 @@ export const router = createBrowserRouter([
     path: "/vendor",
     element: <VendorLayout />,
     errorElement: <ErrorPage />,
-    children: vendorRoutes,
+    children: [{ path: "*", element: <VendorRedirect /> }],
   },
   {
     path: "*",
