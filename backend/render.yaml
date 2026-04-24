@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: gym-backend
+    env: node
+    plan: free
+    region: singapore
+
+    buildCommand: npm install
+    startCommand: npm start
+
+    envVars:
+      - key: NODE_ENV
+        value: production
+
+      - key: PORT
+        value: 10000
+
+      - key: DB_URL
+        sync: false
+
+      - key: JWT_SECRET
+        sync: false
