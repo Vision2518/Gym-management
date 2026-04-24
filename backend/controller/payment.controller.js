@@ -1,6 +1,10 @@
 import db from "../config/db.connect.js";
 import fs from "fs";
 import path from "path";
+
+const isValidDateInput = (value) =>
+  typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value);
+
 export const addPayment = async (req, res) => {
   try {
     const company_id = req.vendor?.company_id;
@@ -9,6 +13,7 @@ export const addPayment = async (req, res) => {
       plan_id,
       discount,
       paid_amount,
+      payment_date,
       payment_method,
       remarks,
     } = req.body;
@@ -63,6 +68,13 @@ export const addPayment = async (req, res) => {
       return res.status(400).json({
         success: false,
         message: "Paid amount must be greater than 0.",
+      });
+    }
+
+    if (payment_date && !isValidDateInput(payment_date)) {
+      return res.status(400).json({
+        success: false,
+        message: "Please enter a valid payment date.",
       });
     }
 
@@ -134,6 +146,7 @@ export const addPayment = async (req, res) => {
 
     // 9. Prevent overpayment across all installments
     const totalAfterThisPayment = totalPreviousPaid + finalPaidAmount;
+    const paymentCreatedAt = payment_date ? `${payment_date} 00:00:00` : new Date();
 
     if (totalAfterThisPayment > payableAmount) {
       return res.status(400).json({
@@ -144,8 +157,8 @@ export const addPayment = async (req, res) => {
 
     // 10. Insert payment
     const [result] = await db.query(
-      `INSERT INTO payments (member_id, plan_id, discount, paid_amount, payment_method, remarks)
-       VALUES (?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO payments (member_id, plan_id, discount, paid_amount, payment_method, remarks, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
       [
         member_id,
         plan_id,
@@ -153,6 +166,7 @@ export const addPayment = async (req, res) => {
         finalPaidAmount,
         payment_method,
         remarks ?? null,
+        paymentCreatedAt,
       ],
     );
 
@@ -260,6 +274,7 @@ export const updatePayment = async (req, res) => {
       plan_id,
       discount,
       paid_amount,
+      payment_date,
       payment_method,
       remarks,
     } = req.body;
@@ -287,6 +302,9 @@ export const updatePayment = async (req, res) => {
     const updatedPlanId = plan_id ?? oldPayment.plan_id;
     const updatedDiscount = Number(discount ?? oldPayment.discount ?? 0);
     const updatedPaidAmount = Number(paid_amount ?? oldPayment.paid_amount ?? 0);
+    const updatedPaymentDate = payment_date ?? (oldPayment.created_at
+      ? oldPayment.created_at.toISOString().split("T")[0]
+      : null);
     const updatedPaymentMethod = payment_method ?? oldPayment.payment_method;
     const updatedRemarks = remarks ?? oldPayment.remarks;
 
@@ -302,6 +320,13 @@ export const updatePayment = async (req, res) => {
       return res.status(400).json({
         success: false,
         message: "Paid amount must be greater than 0.",
+      });
+    }
+
+    if (updatedPaymentDate && !isValidDateInput(updatedPaymentDate)) {
+      return res.status(400).json({
+        success: false,
+        message: "Please enter a valid payment date.",
       });
     }
 
@@ -384,7 +409,7 @@ export const updatePayment = async (req, res) => {
     // 10. Update payment
     await db.query(
       `UPDATE payments
-       SET member_id = ?, plan_id = ?, discount = ?, paid_amount = ?, payment_method = ?, remarks = ?
+       SET member_id = ?, plan_id = ?, discount = ?, paid_amount = ?, payment_method = ?, remarks = ?, created_at = ?
        WHERE id = ?`,
       [
         updatedMemberId,
@@ -393,6 +418,7 @@ export const updatePayment = async (req, res) => {
         updatedPaidAmount,
         updatedPaymentMethod,
         updatedRemarks,
+        updatedPaymentDate ? `${updatedPaymentDate} 00:00:00` : oldPayment.created_at,
         id,
       ],
     );

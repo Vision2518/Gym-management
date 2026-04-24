@@ -12,7 +12,7 @@
         .total { text-align: right; font-weight: bold; }
     </style>
 </head>
-<body>
+<body onload="window.print()">
     <h1>{{gym_name}}</h1>
     <h2>Receipt</h2>
     <p><strong>Member:</strong> {{member_name}}</p>
@@ -39,5 +39,10 @@
     <p><strong>Payment Method:</strong> {{payment_method}}</p>
     <p><strong>Remarks:</strong> {{remarks}}</p>
     <p><strong>Date:</strong> {{date}}</p>
+    <script>
+        window.addEventListener("afterprint", function () {
+            window.close();
+        });
+    </script>
 </body>
 </html>

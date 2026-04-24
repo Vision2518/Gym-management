@@ -169,7 +169,13 @@ export const getMembersByCompany = async (req, res) => {
     }
 
     const [members] = await db.query(
-      "SELECT * FROM members WHERE company_id = ? ORDER BY id DESC",
+      `SELECT
+        m.*,
+        mp.name AS plan_name
+      FROM members m
+      LEFT JOIN membership_plans mp ON m.plan_id = mp.id
+      WHERE m.company_id = ?
+      ORDER BY m.id DESC`,
       [company_id],
     );
 
