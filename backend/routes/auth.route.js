@@ -67,5 +67,10 @@ authRouter.patch(
   authorizeRoles("super_admin"),
   updateCompany,
 );
-authRouter.get("/stats", isSuperAdmin, authorizeRoles("super_admin"), getDashboardStats);
+authRouter.get(
+  "/stats",
+  isSuperAdmin,
+  authorizeRoles("super_admin"),
+  getDashboardStats,
+);
 export default authRouter;

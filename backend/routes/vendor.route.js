@@ -39,9 +39,4 @@ vendorRouter.patch(
   authorizeRoles("vendor"),
   updatePlan,
 );
-vendorRouter.get(
-  "/stats",
-  isVendor,
-  authorizeRoles("vendor"),
-  getVendorStats,
-);
+vendorRouter.get("/stats", isVendor, authorizeRoles("vendor"), getVendorStats);

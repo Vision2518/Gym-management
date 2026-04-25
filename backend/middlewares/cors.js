@@ -1,7 +1,4 @@
 import cors from "cors";
-import dotenv from "dotenv";
-
-dotenv.config();
 
 const allowedOrigins = (process.env.FRONTEND_URLS || "")
   .split(",")

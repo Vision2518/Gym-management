@@ -41,7 +41,15 @@ paymentRouter.delete(
   authorizeRoles("vendor"),
   deletePayment,
 );
-paymentRouter.get("/bill/:payment_id", isVendor,
-  authorizeRoles("vendor"),getBillById);
-paymentRouter.get("/history/:member_id", isVendor,
-  authorizeRoles("vendor"),getPaymentHistoryByMemberId);
+paymentRouter.get(
+  "/bill/:payment_id",
+  isVendor,
+  authorizeRoles("vendor"),
+  getBillById,
+);
+paymentRouter.get(
+  "/history/:member_id",
+  isVendor,
+  authorizeRoles("vendor"),
+  getPaymentHistoryByMemberId,
+);
