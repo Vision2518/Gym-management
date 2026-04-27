@@ -123,12 +123,12 @@ const Plans = () => {
                     <td className="px-6 py-4">Rs {p.price}</td>
                     <td className="px-6 py-4">{memberCount}</td>
                     <td className="px-6 py-4 flex gap-3">
-                      <button onClick={() => openEdit(p)} className="text-yellow-400 hover:text-yellow-300"><FaEdit size={16} /></button>
+                      <button onClick={() => openEdit(p)} className="cursor-pointer text-yellow-400 hover:text-yellow-300"><FaEdit size={16} /></button>
                       <button
                         onClick={() => openDelete(p)}
                         disabled={isDeleteDisabled}
                         title={memberCount > 0 ? "Cannot delete a plan with enrolled members" : "Delete plan"}
-                        className="text-red-400 hover:text-red-300 disabled:text-red-200 disabled:cursor-not-allowed"
+                        className="cursor-pointer text-red-400 hover:text-red-300 disabled:text-red-200 disabled:cursor-not-allowed"
                       >
                         <FaTrash size={16} />
                       </button>

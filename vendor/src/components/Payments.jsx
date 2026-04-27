@@ -355,20 +355,20 @@ const Payments = () => {
                     <td className="px-6 py-4 flex gap-3">
                       <button
                         onClick={() => handleBill(p.id)}
-                        className="text-green-400 hover:text-green-300"
+                        className="cursor-pointer text-green-400 hover:text-green-300"
                       >
                         <FaFileInvoice size={16} />
                       </button>
                       <button
                         onClick={() => openEdit(p)}
-                        className="text-yellow-400 hover:text-yellow-300"
+                        className="cursor-pointer text-yellow-400 hover:text-yellow-300"
                       >
                         <FaEdit size={16} />
                       </button>
                       <button
                         onClick={() => openDelete(p)}
                         disabled={isDeletingPayment}
-                        className="text-red-400 hover:text-red-300 disabled:text-red-200 disabled:cursor-not-allowed"
+                        className="cursor-pointer text-red-400 hover:text-red-300 disabled:text-red-200 disabled:cursor-not-allowed"
                       >
                         <FaTrash size={16} />
                       </button>

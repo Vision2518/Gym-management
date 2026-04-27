@@ -181,14 +181,14 @@ const Companies = () => {
                       <div className="flex gap-4">
                         <button
                           onClick={() => openEdit(company)}
-                          className="text-yellow-400 hover:text-yellow-300 transition-colors"
+                          className="cursor-pointer text-yellow-400 hover:text-yellow-300 transition-colors"
                           title="Edit"
                         >
                           <FaEdit size={18} />
                         </button>
                         <button
                           onClick={() => openDelete(company)}
-                          className="text-red-400 hover:text-red-300 transition-colors"
+                          className="cursor-pointer text-red-400 hover:text-red-300 transition-colors"
                           title="Delete"
                         >
                           <FaTrash size={18} />

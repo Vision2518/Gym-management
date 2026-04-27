@@ -204,13 +204,13 @@ const Vendors = () => {
                     <td className="px-6 py-4 flex gap-3">
                       <button
                         onClick={() => openEdit(v)}
-                        className="text-yellow-400 hover:text-yellow-300"
+                        className="cursor-pointer text-yellow-400 hover:text-yellow-300"
                       >
                         <FaEdit size={16} />
                       </button>
                       <button
                         onClick={() => openDelete(v)}
-                        className="text-red-400 hover:text-red-300"
+                        className="cursor-pointer text-red-400 hover:text-red-300"
                       >
                         <FaTrash size={16} />
                       </button>
