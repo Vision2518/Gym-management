@@ -3,6 +3,8 @@ import { FaPlus, FaEdit, FaTrash } from "react-icons/fa";
 import { toast } from "react-toastify";
 import Modal from "./shared/Modal";
 import Input from "./shared/Input";
+import Pagination from "./shared/Pagination";
+import { usePagination } from "../hooks/usePagination";
 import { useGetPlansByCompanyQuery, useAddPlanMutation, useUpdatePlanMutation, useDeletePlanMutation } from "../redux/features/authSlice";
 import { getErrorMessage } from "../utils/toastMessage";
 
@@ -22,6 +24,18 @@ const Plans = () => {
   const [initialForm, setInitialForm] = useState(empty);
 
   const plans = data?.plans || [];
+  const {
+    currentPage,
+    totalPages,
+    paginatedItems,
+    goToPage,
+    goToPrevious,
+    goToNext,
+    startItem,
+    endItem,
+    totalItems,
+    showPagination,
+  } = usePagination(plans, 10);
   const isSubmitting = isAddingPlan || isUpdatingPlan;
   const isDirty = JSON.stringify(form) !== JSON.stringify(initialForm);
   const isSubmitDisabled = isSubmitting || (editing && !isDirty);
@@ -97,13 +111,13 @@ const Plans = () => {
             <tbody>
               {plans.length === 0
                 ? <tr><td colSpan={6} className="text-center py-8 text-purple-300">No plans found</td></tr>
-                : plans.map((p, i) => {
+                : paginatedItems.map((p, i) => {
                     const memberCount = Number(p.member_count || 0);
                     const isDeleteDisabled = isDeletingPlan || memberCount > 0;
 
                     return (
                   <tr key={p.id} className="border-t border-white/10 hover:bg-white/5 transition-colors">
-                    <td className="px-6 py-4">{i + 1}</td>
+                    <td className="px-6 py-4">{startItem + i}</td>
                     <td className="px-6 py-4 font-medium">{p.plan_name}</td>
                     <td className="px-6 py-4">{p.duration}</td>
                     <td className="px-6 py-4">Rs {p.price}</td>
@@ -124,6 +138,18 @@ const Plans = () => {
                   })}
             </tbody>
           </table>
+        )}
+        {showPagination && (
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            goToPrevious={goToPrevious}
+            goToNext={goToNext}
+            goToPage={goToPage}
+            startItem={startItem}
+            endItem={endItem}
+            totalItems={totalItems}
+          />
         )}
       </div>
 

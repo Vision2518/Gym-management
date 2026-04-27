@@ -3,6 +3,8 @@ import { FaPlus, FaEdit, FaTrash, FaFileInvoice } from "react-icons/fa";
 import { toast } from "react-toastify";
 import Modal from "./shared/Modal";
 import Input from "./shared/Input";
+import Pagination from "./shared/Pagination";
+import { usePagination } from "../hooks/usePagination";
 import {
   useGetAllPaymentsQuery,
   useAddPaymentMutation,
@@ -97,6 +99,18 @@ const Payments = () => {
         return aName.localeCompare(bName);
       });
   }, [members, normalizedSearch]);
+  const {
+    currentPage,
+    totalPages,
+    paginatedItems,
+    goToPage,
+    goToPrevious,
+    goToNext,
+    startItem,
+    endItem,
+    totalItems,
+    showPagination,
+  } = usePagination(filteredPayments, 10);
   const exactMatchedMember = useMemo(() => {
     if (!normalizedSearch) return null;
 
@@ -296,7 +310,7 @@ const Payments = () => {
           <p className="text-purple-200 p-8 text-center">Loading...</p>
         ) : isError ? (
           <p className="text-yellow-400 p-8 text-center">
-            Failed to load payments.
+           No payments found
           </p>
         ) : (
           <table className="w-full text-sm text-left text-white">
@@ -325,12 +339,12 @@ const Payments = () => {
                   </td>
                 </tr>
               ) : (
-                filteredPayments.map((p, i) => (
+                paginatedItems.map((p, i) => (
                   <tr
                     key={p.id}
                     className="border-t border-white/10 hover:bg-white/5 transition-colors"
                   >
-                    <td className="px-6 py-4">{i + 1}</td>
+                    <td className="px-6 py-4">{startItem + i}</td>
                     <td className="px-6 py-4 font-medium">{p.member_name}</td>
                     <td className="px-6 py-4">{p.plan_name}</td>
                     <td className="px-6 py-4">Rs {p.paid_amount}</td>
@@ -364,6 +378,18 @@ const Payments = () => {
               )}
             </tbody>
           </table>
+        )}
+        {showPagination && (
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            goToPrevious={goToPrevious}
+            goToNext={goToNext}
+            goToPage={goToPage}
+            startItem={startItem}
+            endItem={endItem}
+            totalItems={totalItems}
+          />
         )}
       </div>
 

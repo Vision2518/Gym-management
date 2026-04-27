@@ -9,6 +9,8 @@ import {
 import { toast } from "react-toastify";
 import DetailsModal from "./shared/Modal";
 import Input from "./shared/Input";
+import Pagination from "./shared/Pagination";
+import { usePagination } from "../hooks/usePagination";
 import { getErrorMessage } from "../utils/toastMessage";
 
 const phoneRegex = /^\d{10}$/;
@@ -18,8 +20,10 @@ const empty = { name: "", email: "", number: "", address: "" };
 const Companies = () => {
   const { data, isLoading, isError } = useGetCompaniesQuery();
   const [addCompany, { isLoading: isAddingCompany }] = useAddCompanyMutation();
-  const [updateCompany, { isLoading: isUpdatingCompany }] = useUpdateCompanyMutation();
-  const [deleteCompany, { isLoading: isDeletingCompany }] = useDeleteCompanyMutation();
+  const [updateCompany, { isLoading: isUpdatingCompany }] =
+    useUpdateCompanyMutation();
+  const [deleteCompany, { isLoading: isDeletingCompany }] =
+    useDeleteCompanyMutation();
 
   const [showModal, setShowModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -29,6 +33,18 @@ const Companies = () => {
   const [initialForm, setInitialForm] = useState(empty);
 
   const companies = data?.company || [];
+  const {
+    currentPage,
+    totalPages,
+    paginatedItems,
+    goToPage,
+    goToPrevious,
+    goToNext,
+    startItem,
+    endItem,
+    totalItems,
+    showPagination,
+  } = usePagination(companies, 10);
   const isSubmitting = isAddingCompany || isUpdatingCompany;
   const isDirty = JSON.stringify(form) !== JSON.stringify(initialForm);
   const isSubmitDisabled = isSubmitting || (editing && !isDirty);
@@ -105,30 +121,38 @@ const Companies = () => {
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 p-8">
       {/* Header Section */}
       <div className="flex items-center justify-between mb-8">
-        <h1 className="text-3xl font-bold text-white tracking-tight">Companies</h1>
+        <h1 className="text-3xl font-bold text-white tracking-tight">
+          Companies
+        </h1>
         <button
           onClick={openAdd}
           className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-200 shadow-lg shadow-red-900/20"
         >
-           Add Company
+          Add Company
         </button>
       </div>
 
       {/* Table Section */}
       <div className="bg-white/10 backdrop-blur rounded-2xl overflow-hidden shadow-xl border border-white/5">
         {isLoading ? (
-          <p className="text-blue-200 p-8 text-center animate-pulse">Loading...</p>
+          <p className="text-blue-200 p-8 text-center animate-pulse">
+            Loading...
+          </p>
         ) : isError ? (
-          <p className="text-red-400 p-8 text-center">Failed to load companies.</p>
+          <p className="text-red-400 p-8 text-center">
+            Failed to load companies.
+          </p>
         ) : (
           <table className="w-full text-sm text-left text-white">
             <thead className="bg-white/10 text-blue-200 uppercase text-xs tracking-wider">
               <tr>
-                {["#", "Name", "Email", "Number", "Address", "Actions"].map((h) => (
-                  <th key={h} className="px-6 py-5 font-semibold">
-                    {h}
-                  </th>
-                ))}
+                {["#", "Name", "Email", "Number", "Address", "Actions"].map(
+                  (h) => (
+                    <th key={h} className="px-6 py-5 font-semibold">
+                      {h}
+                    </th>
+                  ),
+                )}
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5">
@@ -139,15 +163,17 @@ const Companies = () => {
                   </td>
                 </tr>
               ) : (
-                companies.map((company, i) => (
+                paginatedItems.map((company, i) => (
                   <tr
                     key={company.id}
                     className="hover:bg-white/5 transition-colors group"
                   >
-                    <td className="px-6 py-4 text-blue-300">{i + 1}</td>
+                    <td className="px-6 py-4 text-blue-300">{startItem + i}</td>
                     <td className="px-6 py-4 font-medium">{company.name}</td>
                     <td className="px-6 py-4 text-gray-300">{company.email}</td>
-                    <td className="px-6 py-4 text-gray-300">{company.number || "-"}</td>
+                    <td className="px-6 py-4 text-gray-300">
+                      {company.number || "-"}
+                    </td>
                     <td className="px-6 py-4 text-gray-300 max-w-xs truncate">
                       {company.address || "-"}
                     </td>
@@ -174,6 +200,18 @@ const Companies = () => {
               )}
             </tbody>
           </table>
+        )}
+        {showPagination && (
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            goToPrevious={goToPrevious}
+            goToNext={goToNext}
+            goToPage={goToPage}
+            startItem={startItem}
+            endItem={endItem}
+            totalItems={totalItems}
+          />
         )}
       </div>
 
@@ -235,14 +273,14 @@ const Companies = () => {
               title="Phone number must be exactly 10 digits"
             />
             <div className="md:col-span-3">
-            <Input
-              label="Address"
-              name="address"
-              placeholder="Enter full company address"
-              value={form.address}
-              onChange={handleChange}
-              required
-            />
+              <Input
+                label="Address"
+                name="address"
+                placeholder="Enter full company address"
+                value={form.address}
+                onChange={handleChange}
+                required
+              />
             </div>
           </div>
         </form>
@@ -277,8 +315,12 @@ const Companies = () => {
           <div className="mx-auto w-20 h-20 bg-red-50 rounded-full flex items-center justify-center mb-6">
             <FaTrash className="text-red-500 text-3xl" />
           </div>
-          <p className="text-gray-600 text-lg">Are you sure you want to delete:</p>
-          <p className="text-2xl font-bold text-gray-900 mt-2">{deletingCompany?.name}</p>
+          <p className="text-gray-600 text-lg">
+            Are you sure you want to delete:
+          </p>
+          <p className="text-2xl font-bold text-gray-900 mt-2">
+            {deletingCompany?.name}
+          </p>
         </div>
       </DetailsModal>
     </div>

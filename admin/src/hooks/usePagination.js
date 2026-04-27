@@ -3,7 +3,7 @@ import { useState, useMemo, useEffect } from "react";
 export const usePagination = (items, itemsPerPage = 10) => {
   const [currentPage, setCurrentPage] = useState(1);
 
-  const totalPages = Math.ceil(items.length / itemsPerPage);
+  const totalPages = Math.max(1, Math.ceil(items.length / itemsPerPage));
 
   const paginatedItems = useMemo(() => {
     const start = (currentPage - 1) * itemsPerPage;
@@ -20,7 +20,7 @@ export const usePagination = (items, itemsPerPage = 10) => {
   const goToNext = () => goToPage(currentPage + 1);
 
   // Reset to page 1 when items change (e.g., search/filter)
-  useMemo(() => {
+  useEffect(() => {
     setCurrentPage(1);
   }, [items.length]);
 
@@ -38,6 +38,6 @@ export const usePagination = (items, itemsPerPage = 10) => {
     startItem,
     endItem,
     totalItems: items.length,
-    showPagination: items.length > itemsPerPage,
+    showPagination: true,
   };
 };

@@ -11,6 +11,8 @@ import { toast } from "react-toastify";
 import DetailsModal from "./shared/Modal";
 import Input from "./shared/Input";
 import Select from "./shared/Select";
+import Pagination from "./shared/Pagination";
+import { usePagination } from "../hooks/usePagination";
 import { getErrorMessage } from "../utils/toastMessage";
 
 const phoneRegex = /^\d{10}$/;
@@ -28,8 +30,10 @@ const Vendors = () => {
   const { data, isLoading, isError } = useGetVendorsQuery();
   const { data: companiesData } = useGetCompaniesQuery();
   const [addVendor, { isLoading: isAddingVendor }] = useAddVendorMutation();
-  const [updateVendor, { isLoading: isUpdatingVendor }] = useUpdateVendorMutation();
-  const [deleteVendor, { isLoading: isDeletingVendor }] = useDeleteVendorMutation();
+  const [updateVendor, { isLoading: isUpdatingVendor }] =
+    useUpdateVendorMutation();
+  const [deleteVendor, { isLoading: isDeletingVendor }] =
+    useDeleteVendorMutation();
 
   const [showModal, setShowModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -40,6 +44,18 @@ const Vendors = () => {
 
   const vendors = data?.vendors || [];
   const companies = companiesData?.company || [];
+  const {
+    currentPage,
+    totalPages,
+    paginatedItems,
+    goToPage,
+    goToPrevious,
+    goToNext,
+    startItem,
+    endItem,
+    totalItems,
+    showPagination,
+  } = usePagination(vendors, 10);
   const isSubmitting = isAddingVendor || isUpdatingVendor;
   const isDirty = JSON.stringify(form) !== JSON.stringify(initialForm);
   const isSubmitDisabled = isSubmitting || (editing && !isDirty);
@@ -80,7 +96,10 @@ const Vendors = () => {
       toast.error("Phone number must be exactly 10 digits.");
       return;
     }
-    if ((!editing || form.password) && !strongPasswordRegex.test(form.password)) {
+    if (
+      (!editing || form.password) &&
+      !strongPasswordRegex.test(form.password)
+    ) {
       toast.error(
         "Password must be at least 6 characters and include letters, numbers, and a symbol.",
       );
@@ -125,7 +144,7 @@ const Vendors = () => {
           onClick={openAdd}
           className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-200 shadow-lg shadow-red-900/20"
         >
-         Add Vendor
+          Add Vendor
         </button>
       </div>
 
@@ -164,12 +183,12 @@ const Vendors = () => {
                   </td>
                 </tr>
               ) : (
-                vendors.map((v, i) => (
+                paginatedItems.map((v, i) => (
                   <tr
                     key={v.id}
                     className="border-t border-white/10 hover:bg-white/5 transition-colors"
                   >
-                    <td className="px-6 py-4">{i + 1}</td>
+                    <td className="px-6 py-4">{startItem + i}</td>
                     <td className="px-6 py-4 font-medium">{v.username}</td>
                     <td className="px-6 py-4">{v.email}</td>
                     <td className="px-6 py-4">{v.number || "-"}</td>
@@ -201,6 +220,18 @@ const Vendors = () => {
               )}
             </tbody>
           </table>
+        )}
+        {showPagination && (
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            goToPrevious={goToPrevious}
+            goToNext={goToNext}
+            goToPage={goToPage}
+            startItem={startItem}
+            endItem={endItem}
+            totalItems={totalItems}
+          />
         )}
       </div>
 
@@ -265,7 +296,9 @@ const Vendors = () => {
               label="Password"
               name="password"
               type="password"
-              placeholder={editing ? "New Password (optional)" : "Enter password"}
+              placeholder={
+                editing ? "New Password (optional)" : "Enter password"
+              }
               value={form.password}
               onChange={handleChange}
               required={!editing}

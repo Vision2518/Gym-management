@@ -12,7 +12,7 @@ const Input = forwardRef(
         value={value}
         onChange={onChange}
         required={required}
-        className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-transparent transition-all duration-200 bg-white/50 backdrop-blur-sm"
+        className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none"
         {...rest}
       />
     </div>

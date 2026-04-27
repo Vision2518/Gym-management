@@ -3,6 +3,8 @@ import { FaPlus, FaEdit, FaTrash } from "react-icons/fa";
 import { toast } from "react-toastify";
 import Modal from "./shared/Modal";
 import Input from "./shared/Input";
+import Pagination from "./shared/Pagination";
+import { usePagination } from "../hooks/usePagination";
 import { useGetSchedulesByCompanyQuery, useAddScheduleMutation, useUpdateScheduleMutation, useDeleteScheduleMutation } from "../redux/features/authSlice";
 import { getErrorMessage } from "../utils/toastMessage";
 
@@ -34,6 +36,18 @@ const Schedules = () => {
   const [initialForm, setInitialForm] = useState(empty);
 
   const schedules = data?.schedules || [];
+  const {
+    currentPage,
+    totalPages,
+    paginatedItems,
+    goToPage,
+    goToPrevious,
+    goToNext,
+    startItem,
+    endItem,
+    totalItems,
+    showPagination,
+  } = usePagination(schedules, 10);
   const isSubmitting = isAddingSchedule || isUpdatingSchedule;
   const isDirty = JSON.stringify(form) !== JSON.stringify(initialForm);
   const isSubmitDisabled = isSubmitting || (editing && !isDirty);
@@ -112,9 +126,9 @@ const Schedules = () => {
             <tbody>
               {schedules.length === 0
                 ? <tr><td colSpan={5} className="text-center py-8 text-purple-300">No schedules found</td></tr>
-                : schedules.map((s, i) => (
+                : paginatedItems.map((s, i) => (
                   <tr key={s.id} className="border-t border-white/10 hover:bg-white/5 transition-colors">
-                    <td className="px-6 py-4">{i + 1}</td>
+                    <td className="px-6 py-4">{startItem + i}</td>
                     <td className="px-6 py-4">{s.start_time}</td>
                     <td className="px-6 py-4">{s.end_time}</td>
                     <td className="px-6 py-4 flex gap-3">
@@ -125,6 +139,18 @@ const Schedules = () => {
                 ))}
             </tbody>
           </table>
+        )}
+        {showPagination && (
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            goToPrevious={goToPrevious}
+            goToNext={goToNext}
+            goToPage={goToPage}
+            startItem={startItem}
+            endItem={endItem}
+            totalItems={totalItems}
+          />
         )}
       </div>
 
