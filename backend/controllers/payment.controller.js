@@ -10,6 +10,51 @@ const billTemplatePath = path.resolve(__dirname, "../utils/bill.html");
 const isValidDateInput = (value) =>
   typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value);
 
+const normalizePaymentSearch = (value = "") =>
+  String(value).trim().toLowerCase();
+
+const matchesPaymentSearch = (value, normalizedSearch) => {
+  if (!normalizedSearch) return true;
+
+  const memberName = String(value.member_name || value.full_name || "")
+    .toLowerCase();
+  const memberPhone = String(value.phone || "").toLowerCase();
+  const memberEmail = String(value.email || "").toLowerCase();
+
+  return (
+    memberName.includes(normalizedSearch) ||
+    memberPhone.includes(normalizedSearch) ||
+    memberEmail.includes(normalizedSearch)
+  );
+};
+
+const getPaymentRowStatus = (payment) => {
+  const rawStatus = String(payment.payment_status || payment.status || "")
+    .trim()
+    .toLowerCase();
+
+  if (rawStatus.includes("partial")) return "partial";
+  if (rawStatus === "paid" || rawStatus === "complete" || rawStatus === "fully paid") {
+    return "paid";
+  }
+  if (
+    rawStatus === "unpaid" ||
+    rawStatus === "pending" ||
+    rawStatus === "due"
+  ) {
+    return "unpaid";
+  }
+
+  const paidAmount = Number(payment.paid_amount || 0);
+  const remainingAmount = Number(payment.remaining_amount || 0);
+
+  if (remainingAmount > 0 && paidAmount > 0) return "partial";
+  if (remainingAmount > 0 && paidAmount <= 0) return "unpaid";
+  if (paidAmount > 0) return "paid";
+
+  return "unpaid";
+};
+
 export const addPayment = async (req, res) => {
   try {
     const company_id = req.vendor?.company_id;
@@ -213,23 +258,130 @@ export const addPayment = async (req, res) => {
 export const getAllPayments = async (req, res) => {
   try {
     const company_id = req.vendor?.company_id;
+    const page = Math.max(Number.parseInt(req.query.page, 10) || 1, 1);
+    const limit = Math.max(Number.parseInt(req.query.limit, 10) || 10, 1);
+    const filter = String(req.query.filter || "all").toLowerCase();
+    const normalizedSearch = normalizePaymentSearch(req.query.search);
     const [payments] = await db.query(
       `SELECT p.id, p.member_id, m.full_name AS member_name, 
               p.plan_id, pl.name AS plan_name, 
-              p.discount, p.paid_amount,p.payment_method, p.remarks, p.created_at
+              p.discount, p.paid_amount,p.payment_method, p.remarks, p.created_at,
+              pl.price AS plan_price, m.phone, m.email
        FROM payments p
        JOIN members m ON p.member_id = m.id
        JOIN membership_plans pl ON p.plan_id = pl.id
        WHERE m.company_id = ?
        ORDER BY p.created_at DESC`,
-      [company_id]
+      [company_id],
     );
-    if (payments.length === 0) {
-      return res
-        .status(404)
-        .json({ success: false, message: "No payments found." });
-    }
-    return res.status(200).json({ success: true, payments });
+    const [members] = await db.query(
+      `SELECT m.id, m.full_name, m.phone, m.email, m.plan_id, m.join_date,
+              mp.name AS plan_name
+       FROM members m
+       LEFT JOIN membership_plans mp ON m.plan_id = mp.id
+       WHERE m.company_id = ?`,
+      [company_id],
+    );
+
+    const paymentTotals = payments.reduce((acc, payment) => {
+      const key = `${payment.member_id}:${payment.plan_id}`;
+      const existing = acc.get(key) || {
+        total_paid: 0,
+        payable_amount:
+          Number(payment.plan_price || 0) - Number(payment.discount || 0),
+      };
+
+      existing.total_paid += Number(payment.paid_amount || 0);
+      existing.remaining_amount = Math.max(
+        existing.payable_amount - existing.total_paid,
+        0,
+      );
+      acc.set(key, existing);
+      return acc;
+    }, new Map());
+
+    const paymentRows = payments
+      .map((payment) => {
+        const key = `${payment.member_id}:${payment.plan_id}`;
+        const totals = paymentTotals.get(key);
+        const remainingAmount = Number(totals?.remaining_amount || 0);
+
+        return {
+          ...payment,
+          rowType: "payment",
+          remaining_amount: remainingAmount,
+          payment_status: remainingAmount === 0 ? "Fully Paid" : "Partially Paid",
+        };
+      })
+      .filter((payment) => matchesPaymentSearch(payment, normalizedSearch));
+
+    const unpaidMemberRows = members
+      .filter((member) => {
+        const hasPaymentRecord = payments.some(
+          (payment) => String(payment.member_id) === String(member.id),
+        );
+
+        if (hasPaymentRecord) return false;
+        return matchesPaymentSearch(member, normalizedSearch);
+      })
+      .map((member) => ({
+        id: `unpaid-${member.id}`,
+        rowType: "member",
+        member_id: member.id,
+        member_name: member.full_name || "Unknown",
+        phone: member.phone || "",
+        email: member.email || "",
+        plan_id: member.plan_id || "",
+        plan_name: member.plan_name || "-",
+        discount: 0,
+        paid_amount: 0,
+        payment_method: "-",
+        remarks: null,
+        created_at: null,
+        remaining_amount: 0,
+        payment_status: "Unpaid",
+      }));
+
+    const searchableRows = [...paymentRows, ...unpaidMemberRows];
+    const counts = searchableRows.reduce(
+      (acc, row) => {
+        const status = getPaymentRowStatus(row);
+        acc.all += 1;
+        acc[status] += 1;
+        return acc;
+      },
+      { all: 0, paid: 0, partial: 0, unpaid: 0 },
+    );
+
+    const filteredRows = searchableRows.filter((row) => {
+      if (filter === "all") return true;
+      return getPaymentRowStatus(row) === filter;
+    });
+
+    const totalItems = filteredRows.length;
+    const totalPages = Math.max(Math.ceil(totalItems / limit), 1);
+    const currentPage = Math.min(page, totalPages);
+    const startIndex = (currentPage - 1) * limit;
+    const paginatedRows = filteredRows.slice(startIndex, startIndex + limit);
+    const collectedAmount = filteredRows.reduce(
+      (sum, row) => sum + Number(row.paid_amount || 0),
+      0,
+    );
+
+    return res.status(200).json({
+      success: true,
+      payments: paginatedRows,
+      counts,
+      summary: {
+        collected_amount: collectedAmount,
+      },
+      pagination: {
+        page: currentPage,
+        limit,
+        totalItems,
+        totalPages,
+      },
+    });
   } catch (error) {
     console.error("Get All Payments Error:", error);
     return res.status(500).json({

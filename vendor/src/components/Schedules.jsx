@@ -13,7 +13,6 @@ const empty = { company_id: "", start_time: "", end_time: "" };
 const getVendorCompanyId = () => {
   const token = localStorage.getItem("authToken");
   if (!token) return "";
-
   try {
     const decoded = JSON.parse(atob(token.split(".")[1]));
     return decoded.company_id || "";
@@ -36,18 +35,8 @@ const Schedules = () => {
   const [initialForm, setInitialForm] = useState(empty);
 
   const schedules = data?.schedules || [];
-  const {
-    currentPage,
-    totalPages,
-    paginatedItems,
-    goToPage,
-    goToPrevious,
-    goToNext,
-    startItem,
-    endItem,
-    totalItems,
-    showPagination,
-  } = usePagination(schedules, 10);
+  const { currentPage, totalPages, paginatedItems, goToPage, goToPrevious, goToNext, startItem, endItem, totalItems, showPagination } = usePagination(schedules, 10);
+
   const isSubmitting = isAddingSchedule || isUpdatingSchedule;
   const isDirty = JSON.stringify(form) !== JSON.stringify(initialForm);
   const isSubmitDisabled = isSubmitting || (editing && !isDirty);
@@ -60,11 +49,7 @@ const Schedules = () => {
     setShowModal(true);
   };
   const openEdit = (s) => {
-    const nextForm = {
-      company_id: getVendorCompanyId() || s.company_id,
-      start_time: s.start_time,
-      end_time: s.end_time,
-    };
+    const nextForm = { company_id: getVendorCompanyId() || s.company_id, start_time: s.start_time, end_time: s.end_time };
     setEditing(s);
     setForm(nextForm);
     setInitialForm(nextForm);
@@ -110,33 +95,64 @@ const Schedules = () => {
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-950 to-slate-900 p-8">
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-3xl font-bold text-white">Schedules</h1>
-        <button onClick={openAdd} className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg transition-colors">
-           Add Schedule
+        <button
+          onClick={openAdd}
+          className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg transition-colors"
+        >
+          <FaPlus size={12} /> Add Schedule
         </button>
       </div>
 
       <div className="bg-white/10 backdrop-blur rounded-2xl overflow-hidden shadow-xl">
-        {isLoading ? <p className="text-purple-200 p-8 text-center">Loading...</p>
-          : isError ? <p className="text-red-400 p-8 text-center">Failed to load schedules.</p>
-          : (
-          <table className="w-full text-sm text-left text-white">
+        {isLoading ? (
+          <p className="text-purple-200 p-8 text-center">Loading...</p>
+        ) : isError ? (
+          <p className="text-red-400 p-8 text-center">Failed to load schedules.</p>
+        ) : (
+          <table className="w-full text-sm text-left text-white table-fixed">
             <thead className="bg-white/10 text-purple-200 uppercase text-xs">
-              <tr>{["#", "Start Time", "End Time", "Actions"].map(h => <th key={h} className="px-6 py-4">{h}</th>)}</tr>
+              <tr>
+                <th className="px-6 py-4 w-16">#</th>
+                <th className="px-6 py-4">Start Time</th>
+                <th className="px-6 py-4">End Time</th>
+                <th className="px-6 py-4 w-28">Actions</th>
+              </tr>
             </thead>
             <tbody>
-              {schedules.length === 0
-                ? <tr><td colSpan={5} className="text-center py-8 text-purple-300">No schedules found</td></tr>
-                : paginatedItems.map((s, i) => (
+              {schedules.length === 0 ? (
+                <tr>
+                  <td colSpan={4} className="text-center py-8 text-purple-300">
+                    No schedules found
+                  </td>
+                </tr>
+              ) : (
+                paginatedItems.map((s, i) => (
                   <tr key={s.id} className="border-t border-white/10 hover:bg-white/5 transition-colors">
                     <td className="px-6 py-4">{startItem + i}</td>
                     <td className="px-6 py-4">{s.start_time}</td>
                     <td className="px-6 py-4">{s.end_time}</td>
-                    <td className="px-6 py-4 flex gap-3">
-                      <button onClick={() => openEdit(s)} className="cursor-pointer text-yellow-400 hover:text-yellow-300"><FaEdit size={16} /></button>
-                      <button onClick={() => openDelete(s)} disabled={isDeletingSchedule} className="cursor-pointer text-red-400 hover:text-red-300 disabled:text-red-200 disabled:cursor-not-allowed"><FaTrash size={16} /></button>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-3">
+                        <button
+                          onClick={() => openEdit(s)}
+                          className="cursor-pointer text-yellow-400 hover:text-yellow-300 transition-colors"
+                          title="Edit"
+                        >
+                          <FaEdit size={15} />
+                        </button>
+                        <button
+                          onClick={() => openDelete(s)}
+                          disabled={isDeletingSchedule}
+                          className="cursor-pointer text-red-400 hover:text-red-300 disabled:text-red-200 disabled:cursor-not-allowed transition-colors"
+                          title="Delete"
+                        >
+                          <FaTrash size={15} />
+                        </button>
+                      </div>
                     </td>
                   </tr>
-                ))}
+                ))
+              )}
             </tbody>
           </table>
         )}
@@ -154,7 +170,16 @@ const Schedules = () => {
         )}
       </div>
 
-      <Modal show={showModal} title={editing ? "Edit Schedule" : "Add Schedule"} onClose={() => { setShowModal(false); setEditing(null); setForm(empty); setInitialForm(empty); }} onSubmit={handleSubmit} submitLabel={editing ? "Update" : "Add Schedule"} submitLoadingLabel={editing ? "Update" : "Adding..."} isSubmitting={isSubmitDisabled} size="4xl">
+      <Modal
+        show={showModal}
+        title={editing ? "Edit Schedule" : "Add Schedule"}
+        onClose={() => { setShowModal(false); setEditing(null); setForm(empty); setInitialForm(empty); }}
+        onSubmit={handleSubmit}
+        submitLabel={editing ? "Update" : "Add Schedule"}
+        submitLoadingLabel={editing ? "Update" : "Adding..."}
+        isSubmitting={isSubmitDisabled}
+        size="4xl"
+      >
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Input label="Start Time" name="start_time" type="time" value={form.start_time} onChange={handleChange} required />
           <Input label="End Time" name="end_time" type="time" value={form.end_time} onChange={handleChange} required />

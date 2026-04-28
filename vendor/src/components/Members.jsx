@@ -57,6 +57,20 @@ const getVendorCompanyId = () => {
   }
 };
 
+const buildMemberPayload = (member, status = member.status) => ({
+  full_name: member.full_name || "",
+  phone: member.phone || "",
+  email: member.email || "",
+  gender: member.gender || "",
+  age: member.age || "",
+  address: member.address || "",
+  join_date: member.join_date?.split("T")[0] || "",
+  status,
+  plan_id: member.plan_id || "",
+  schedule_id: member.schedule_id || "",
+  company_id: member.company_id || getVendorCompanyId(),
+});
+
 const Members = () => {
   const { data, isLoading, isError } = useGetMembersByCompanyQuery();
   const { data: schedulesData } = useGetSchedulesByCompanyQuery();
@@ -73,6 +87,7 @@ const Members = () => {
   const [editing, setEditing] = useState(null);
   const [viewingMember, setViewingMember] = useState(null);
   const [deletingMember, setDeletingMember] = useState(null);
+  const [updatingStatusId, setUpdatingStatusId] = useState(null);
   const [form, setForm] = useState(empty);
   const [initialForm, setInitialForm] = useState(empty);
   const [searchTerm, setSearchTerm] = useState("");
@@ -200,6 +215,23 @@ const Members = () => {
     setShowViewModal(true);
   };
 
+  const handleStatusToggle = async (member) => {
+    const nextStatus = member.status === "active" ? "inactive" : "active";
+    setUpdatingStatusId(member.id);
+
+    try {
+      await updateMember({
+        id: member.id,
+        ...buildMemberPayload(member, nextStatus),
+      }).unwrap();
+      toast.success(`Member marked ${nextStatus}`);
+    } catch (err) {
+      toast.error(getErrorMessage(err, "Unable to update member status."));
+    } finally {
+      setUpdatingStatusId(null);
+    }
+  };
+
   const selectedViewPlan = plans.find(
     (plan) => String(plan.id) === String(viewingMember?.plan_id),
   );
@@ -286,11 +318,44 @@ const Members = () => {
                     <td className="px-6 py-4">{m.email || "-"}</td>
                     <td className="px-6 py-4">{m.gender || "-"}</td>
                     <td className="px-6 py-4">
-                      <span
-                        className={`px-2 py-1 rounded-full text-xs ${m.status === "active" ? "bg-green-600" : "bg-red-600"}`}
-                      >
-                        {m.status}
-                      </span>
+                      <label className="inline-flex items-center gap-3 cursor-pointer">
+                        <span
+                          className={`text-xs font-medium ${
+                            m.status === "active"
+                              ? "text-green-300"
+                              : "text-red-300"
+                          }`}
+                        >
+                          {m.status}
+                        </span>
+                        <button
+                          type="button"
+                          role="switch"
+                          aria-checked={m.status === "active"}
+                          aria-label={`Set ${m.full_name} as ${
+                            m.status === "active" ? "inactive" : "active"
+                          }`}
+                          onClick={() => handleStatusToggle(m)}
+                          disabled={updatingStatusId === m.id}
+                          className={`relative inline-flex h-6 w-12 items-center rounded-full px-0.5 transition-colors ${
+                            m.status === "active"
+                              ? "bg-green-500"
+                              : "bg-red-500"
+                          } ${
+                            updatingStatusId === m.id
+                              ? "cursor-not-allowed opacity-60"
+                              : "cursor-pointer"
+                          }`}
+                        >
+                          <span
+                            className={`h-5 w-5 rounded-full bg-white transition-transform ${
+                              m.status === "active"
+                                ? "translate-x-6"
+                                : "translate-x-0"
+                            }`}
+                          />
+                        </button>
+                      </label>
                     </td>
                     <td className="px-6 py-4 flex gap-3">
                       <button

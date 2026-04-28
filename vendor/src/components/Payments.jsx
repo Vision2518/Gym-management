@@ -4,7 +4,6 @@ import { toast } from "react-toastify";
 import Modal from "./shared/Modal";
 import Input from "./shared/Input";
 import Pagination from "./shared/Pagination";
-import { usePagination } from "../hooks/usePagination";
 import {
   useGetAllPaymentsQuery,
   useAddPaymentMutation,
@@ -16,6 +15,28 @@ import {
 import { getErrorMessage } from "../utils/toastMessage";
 
 const getTodayDate = () => new Date().toISOString().split("T")[0];
+const paymentFilters = [
+  {
+    key: "all",
+    label: "All Payments",
+    description: "View every payment record in one place.",
+  },
+  {
+    key: "paid",
+    label: "Paid",
+    description: "Members who have fully paid their amount.",
+  },
+  {
+    key: "partial",
+    label: "Partially Paid",
+    description: "Payments with a remaining balance still due.",
+  },
+  {
+    key: "unpaid",
+    label: "Unpaid",
+    description: "Members or records with no payment completed yet.",
+  },
+];
 
 const empty = {
   member_id: "",
@@ -27,9 +48,62 @@ const empty = {
   remarks: "",
 };
 
+const getPaymentStatus = (payment) => {
+  const rawStatus = String(payment.payment_status || payment.status || "")
+    .trim()
+    .toLowerCase();
+
+  if (rawStatus.includes("partial")) return "partial";
+  if (rawStatus === "paid" || rawStatus === "complete") return "paid";
+  if (
+    rawStatus === "unpaid" ||
+    rawStatus === "pending" ||
+    rawStatus === "due"
+  ) {
+    return "unpaid";
+  }
+
+  const paidAmount = Number(payment.paid_amount || 0);
+  const remainingAmount = Number(payment.remaining_amount || 0);
+
+  if (remainingAmount > 0 && paidAmount > 0) return "partial";
+  if (remainingAmount > 0 && paidAmount <= 0) return "unpaid";
+  if (paidAmount > 0) return "paid";
+
+  return "unpaid";
+};
+
+const getStatusStyles = (status) => {
+  if (status === "paid") {
+    return "bg-emerald-500/20 text-emerald-300 ring-1 ring-emerald-400/30";
+  }
+
+  if (status === "partial") {
+    return "bg-amber-500/20 text-amber-300 ring-1 ring-amber-400/30";
+  }
+
+  return "bg-rose-500/20 text-rose-300 ring-1 ring-rose-400/30";
+};
+
+const formatStatusLabel = (status) => {
+  if (status === "partial") return "Partially Paid";
+  if (status === "paid") return "Paid";
+  return "Unpaid";
+};
+
 const Payments = () => {
-  const { data, isLoading, isError } = useGetAllPaymentsQuery();
-  const { data: membersData } = useGetMembersByCompanyQuery();
+  const [currentPage, setCurrentPage] = useState(1);
+  const [paymentSearch, setPaymentSearch] = useState("");
+  const [activeFilter, setActiveFilter] = useState("all");
+  const paymentQueryArgs = {
+    page: currentPage,
+    limit: 10,
+    filter: activeFilter,
+    search: paymentSearch.trim(),
+  };
+  const { data, isLoading, isError } = useGetAllPaymentsQuery(paymentQueryArgs);
+  const { data: membersData, isLoading: isMembersLoading } =
+    useGetMembersByCompanyQuery();
   const { data: plansData } = useGetPlansByCompanyQuery();
   const [addPayment, { isLoading: isAddingPayment }] = useAddPaymentMutation();
   const [updatePayment, { isLoading: isUpdatingPayment }] =
@@ -44,35 +118,24 @@ const Payments = () => {
   const [form, setForm] = useState(empty);
   const [initialForm, setInitialForm] = useState(empty);
   const [memberSearch, setMemberSearch] = useState("");
-  const [paymentSearch, setPaymentSearch] = useState("");
   const [selectedMemberData, setSelectedMemberData] = useState(null);
   const [selectedPlanName, setSelectedPlanName] = useState("");
 
   const payments = data?.payments || [];
   const members = membersData?.members || [];
   const plans = plansData?.plans || [];
+  const pagination = data?.pagination;
+  const paymentStatusCounts = data?.counts || {
+    all: 0,
+    paid: 0,
+    partial: 0,
+    unpaid: 0,
+  };
   const isSubmitting = isAddingPayment || isUpdatingPayment;
   const isDirty = JSON.stringify(form) !== JSON.stringify(initialForm);
   const isSubmitDisabled = isSubmitting || (editing && !isDirty);
   const normalizedSearch = memberSearch.trim().toLowerCase();
-  const normalizedPaymentSearch = paymentSearch.trim().toLowerCase();
   const paidAmountText = form.paid_amount ? `${form.paid_amount} only` : "";
-  const filteredPayments = useMemo(() => payments.filter((payment) => {
-    if (!normalizedPaymentSearch) return true;
-
-    const linkedMember = members.find(
-      (member) => String(member.id) === String(payment.member_id),
-    );
-    const memberName = String(payment.member_name || linkedMember?.full_name || "").toLowerCase();
-    const memberPhone = String(linkedMember?.phone || "").toLowerCase();
-    const memberEmail = String(linkedMember?.email || "").toLowerCase();
-
-    return (
-      memberName.includes(normalizedPaymentSearch) ||
-      memberPhone.includes(normalizedPaymentSearch) ||
-      memberEmail.includes(normalizedPaymentSearch)
-    );
-  }), [members, normalizedPaymentSearch, payments]);
   const filteredMembers = useMemo(() => {
     return members
       .filter((member) => {
@@ -99,18 +162,6 @@ const Payments = () => {
         return aName.localeCompare(bName);
       });
   }, [members, normalizedSearch]);
-  const {
-    currentPage,
-    totalPages,
-    paginatedItems,
-    goToPage,
-    goToPrevious,
-    goToNext,
-    startItem,
-    endItem,
-    totalItems,
-    showPagination,
-  } = usePagination(filteredPayments, 10);
   const exactMatchedMember = useMemo(() => {
     if (!normalizedSearch) return null;
 
@@ -135,6 +186,20 @@ const Payments = () => {
     showModal &&
     filteredMembers.length > 0 &&
     (normalizedSearch || !form.member_id);
+  const totalCollected = Number(data?.summary?.collected_amount || 0);
+  const selectedFilterConfig =
+    paymentFilters.find((filter) => filter.key === activeFilter) ||
+    paymentFilters[0];
+  const pageSize = pagination?.limit || 10;
+  const totalPages = pagination?.totalPages || 1;
+  const totalItems = pagination?.totalItems || 0;
+  const startItem = totalItems === 0 ? 0 : (currentPage - 1) * pageSize + 1;
+  const endItem = Math.min(currentPage * pageSize, totalItems);
+  const showPagination = totalItems > 0;
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeFilter, paymentSearch]);
 
   useEffect(() => {
     if (exactMatchedMember) {
@@ -285,113 +350,214 @@ const Payments = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-950 to-slate-900 p-8">
-      <div className="flex items-center justify-between mb-8">
-        <h1 className="text-3xl font-bold text-white">Payments</h1>
+      <div className="mb-8 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-white">Payment Tracker</h1>
+          <p className="mt-2 max-w-2xl text-sm text-purple-200/80">
+            Track fully paid, partially paid, and unpaid members from one
+            workspace.
+          </p>
+        </div>
         <button
           onClick={openAdd}
-          className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg transition-colors"
+          className="flex items-center gap-2 self-start rounded-lg bg-purple-600 px-4 py-2 text-white transition-colors hover:bg-purple-700"
         >
+          <FaPlus size={14} />
           Add Payment
         </button>
       </div>
 
-      <div className="mb-6">
-        <input
-          type="text"
-          value={paymentSearch}
-          onChange={(e) => setPaymentSearch(e.target.value)}
-          placeholder="Search payments by member name, phone, or email"
-          className="w-full max-w-md rounded-xl border border-white/20 bg-white/10 px-4 py-3 text-white placeholder:text-purple-200/70 outline-none transition focus:border-purple-400 focus:bg-white/15"
-        />
-      </div>
+      <section className="space-y-6">
+        <div className="grid gap-4 md:grid-cols-3">
+            <div className="rounded-3xl border border-emerald-400/20 bg-emerald-500/10 p-5">
+              <p className="text-sm text-emerald-200/80">Collected</p>
+              <p className="mt-2 text-2xl font-bold text-white">
+                Rs {totalCollected.toLocaleString()}
+              </p>
+            </div>
+            <div className="rounded-3xl border border-amber-400/20 bg-amber-500/10 p-5">
+              <p className="text-sm text-amber-200/80">Partially Paid</p>
+              <p className="mt-2 text-2xl font-bold text-white">
+                {paymentStatusCounts.partial}
+              </p>
+            </div>
+            <div className="rounded-3xl border border-rose-400/20 bg-rose-500/10 p-5">
+              <p className="text-sm text-rose-200/80">Unpaid</p>
+              <p className="mt-2 text-2xl font-bold text-white">
+                {paymentStatusCounts.unpaid}
+              </p>
+            </div>
+          </div>
 
-      <div className="bg-white/10 backdrop-blur rounded-2xl overflow-hidden shadow-xl">
-        {isLoading ? (
-          <p className="text-purple-200 p-8 text-center">Loading...</p>
-        ) : isError ? (
-          <p className="text-yellow-400 p-8 text-center">
-           No payments found
-          </p>
-        ) : (
-          <table className="w-full text-sm text-left text-white">
-            <thead className="bg-white/10 text-purple-200 uppercase text-xs">
-              <tr>
-                {[
-                  "#",
-                  "Member",
-                  "Plan",
-                  "Paid (Rs)",
-                  "Method",
-                  "Date",
-                  "Actions",
-                ].map((h) => (
-                  <th key={h} className="px-6 py-4">
-                    {h}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {filteredPayments.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="text-center py-8 text-purple-300">
-                    No payments found
-                  </td>
-                </tr>
-              ) : (
-                paginatedItems.map((p, i) => (
-                  <tr
-                    key={p.id}
-                    className="border-t border-white/10 hover:bg-white/5 transition-colors"
-                  >
-                    <td className="px-6 py-4">{startItem + i}</td>
-                    <td className="px-6 py-4 font-medium">{p.member_name}</td>
-                    <td className="px-6 py-4">{p.plan_name}</td>
-                    <td className="px-6 py-4">Rs {p.paid_amount}</td>
-                    <td className="px-6 py-4">{p.payment_method}</td>
-                    <td className="px-6 py-4">
-                      {new Date(p.created_at).toLocaleDateString()}
-                    </td>
-                    <td className="px-6 py-4 flex gap-3">
-                      <button
-                        onClick={() => handleBill(p.id)}
-                        className="cursor-pointer text-green-400 hover:text-green-300"
-                      >
-                        <FaFileInvoice size={16} />
-                      </button>
-                      <button
-                        onClick={() => openEdit(p)}
-                        className="cursor-pointer text-yellow-400 hover:text-yellow-300"
-                      >
-                        <FaEdit size={16} />
-                      </button>
-                      <button
-                        onClick={() => openDelete(p)}
-                        disabled={isDeletingPayment}
-                        className="cursor-pointer text-red-400 hover:text-red-300 disabled:text-red-200 disabled:cursor-not-allowed"
-                      >
-                        <FaTrash size={16} />
-                      </button>
-                    </td>
+        <div className="rounded-3xl border border-white/10 bg-white/10 p-5 backdrop-blur-xl shadow-xl">
+          <div className="mb-5 flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
+            <div>
+              <h2 className="text-xl font-semibold text-white">
+                {selectedFilterConfig.label}
+              </h2>
+              <p className="mt-1 text-sm text-purple-200/75">
+                {selectedFilterConfig.description}
+              </p>
+            </div>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+              <label className="flex min-w-[190px] flex-col gap-2 text-sm text-purple-200/80">
+                <span>Status Filter</span>
+                <select
+                  value={activeFilter}
+                  onChange={(e) => setActiveFilter(e.target.value)}
+                  className="rounded-xl border border-white/20 bg-slate-900/70 px-4 py-3 text-white outline-none transition focus:border-purple-400"
+                >
+                  {paymentFilters.map((filter) => (
+                    <option key={filter.key} value={filter.key}>
+                      {filter.label} ({paymentStatusCounts[filter.key] ?? 0})
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <input
+                type="text"
+                value={paymentSearch}
+                onChange={(e) => setPaymentSearch(e.target.value)}
+                placeholder="Search payments by member name, phone, or email"
+                className="w-full min-w-[260px] max-w-md rounded-xl border border-white/20 bg-white/10 px-4 py-3 text-white placeholder:text-purple-200/70 outline-none transition focus:border-purple-400 focus:bg-white/15"
+              />
+            </div>
+          </div>
+
+          <div className="overflow-hidden rounded-2xl border border-white/10">
+            {isLoading || isMembersLoading ? (
+              <p className="p-8 text-center text-purple-200">Loading...</p>
+            ) : isError ? (
+              <p className="p-8 text-center text-yellow-400">
+                No payments found
+              </p>
+            ) : (
+              <table className="w-full text-left text-sm text-white">
+                <thead className="bg-white/10 text-xs uppercase text-purple-200">
+                  <tr>
+                    {[
+                      "#",
+                      "Member",
+                      "Plan",
+                      "Status",
+                      "Paid (Rs)",
+                      "Method",
+                      "Date",
+                      "Actions",
+                    ].map((h) => (
+                      <th key={h} className="px-6 py-4">
+                        {h}
+                      </th>
+                    ))}
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        )}
-        {showPagination && (
-          <Pagination
-            currentPage={currentPage}
-            totalPages={totalPages}
-            goToPrevious={goToPrevious}
-            goToNext={goToNext}
-            goToPage={goToPage}
-            startItem={startItem}
-            endItem={endItem}
-            totalItems={totalItems}
-          />
-        )}
-      </div>
+                </thead>
+                <tbody>
+                  {payments.length === 0 ? (
+                    <tr>
+                      <td
+                        colSpan={8}
+                        className="py-10 text-center text-purple-300"
+                      >
+                        No records found for this filter.
+                      </td>
+                    </tr>
+                  ) : (
+                    payments.map((row, i) => {
+                      const status = getPaymentStatus(row);
+                      const isPaymentRow = row.rowType === "payment";
+
+                      return (
+                        <tr
+                          key={row.id}
+                          className="border-t border-white/10 transition-colors hover:bg-white/5"
+                        >
+                          <td className="px-6 py-4">{startItem + i}</td>
+                          <td className="px-6 py-4 font-medium">
+                            {row.member_name}
+                          </td>
+                          <td className="px-6 py-4">{row.plan_name}</td>
+                          <td className="px-6 py-4">
+                            <span
+                              className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${getStatusStyles(
+                                status,
+                              )}`}
+                            >
+                              {formatStatusLabel(status)}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4">
+                            Rs {Number(row.paid_amount || 0).toLocaleString()}
+                          </td>
+                          <td className="px-6 py-4">
+                            {row.payment_method}
+                          </td>
+                          <td className="px-6 py-4">
+                            {row.created_at
+                              ? new Date(row.created_at).toLocaleDateString()
+                              : "-"}
+                          </td>
+                          <td className="flex gap-3 px-6 py-4">
+                            {isPaymentRow ? (
+                              <>
+                                <button
+                                  onClick={() => handleBill(row.id)}
+                                  className="cursor-pointer text-green-400 hover:text-green-300"
+                                >
+                                  <FaFileInvoice size={16} />
+                                </button>
+                                <button
+                                  onClick={() => openEdit(row)}
+                                  className="cursor-pointer text-yellow-400 hover:text-yellow-300"
+                                >
+                                  <FaEdit size={16} />
+                                </button>
+                                <button
+                                  onClick={() => openDelete(row)}
+                                  disabled={isDeletingPayment}
+                                  className="cursor-pointer text-red-400 hover:text-red-300 disabled:cursor-not-allowed disabled:text-red-200"
+                                >
+                                  <FaTrash size={16} />
+                                </button>
+                              </>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={openAdd}
+                                className="rounded-lg bg-purple-600 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-purple-700"
+                              >
+                                Add Payment
+                              </button>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            )}
+          </div>
+
+          {showPagination && (
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              goToPrevious={() => setCurrentPage((page) => Math.max(page - 1, 1))}
+              goToNext={() =>
+                setCurrentPage((page) => Math.min(page + 1, totalPages))
+              }
+              goToPage={(page) => {
+                if (page >= 1 && page <= totalPages) {
+                  setCurrentPage(page);
+                }
+              }}
+              startItem={startItem}
+              endItem={endItem}
+              totalItems={totalItems}
+            />
+          )}
+        </div>
+      </section>
 
       <Modal
         show={showModal}

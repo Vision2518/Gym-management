@@ -71,7 +71,10 @@ export const authAPIs = indexSlice.injectEndpoints({
 
     // Payments
     getAllPayments: builder.query({
-      query: () => ({ url: "/payment/getpayments" }),
+      query: ({ page = 1, limit = 10, filter = "all", search = "" } = {}) => ({
+        url: "/payment/getpayments",
+        params: { page, limit, filter, search },
+      }),
       providesTags: ["payments"],
     }),
     addPayment: builder.mutation({
