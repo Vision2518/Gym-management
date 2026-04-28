@@ -8,7 +8,7 @@ import { usePagination } from "../hooks/usePagination";
 import { useGetSchedulesByCompanyQuery, useAddScheduleMutation, useUpdateScheduleMutation, useDeleteScheduleMutation } from "../redux/features/authSlice";
 import { getErrorMessage } from "../utils/toastMessage";
 
-const empty = { company_id: "", start_time: "", end_time: "" };
+const empty = { company_id: "", schedule_name: "", start_time: "", end_time: "" };
 
 const getVendorCompanyId = () => {
   const token = localStorage.getItem("authToken");
@@ -44,12 +44,17 @@ const Schedules = () => {
   const openAdd = () => {
     const companyId = getVendorCompanyId();
     setEditing(null);
-    setForm({ company_id: companyId, start_time: "", end_time: "" });
-    setInitialForm({ company_id: companyId, start_time: "", end_time: "" });
+    setForm({ company_id: companyId, schedule_name: "", start_time: "", end_time: "" });
+    setInitialForm({ company_id: companyId, schedule_name: "", start_time: "", end_time: "" });
     setShowModal(true);
   };
   const openEdit = (s) => {
-    const nextForm = { company_id: getVendorCompanyId() || s.company_id, start_time: s.start_time, end_time: s.end_time };
+    const nextForm = {
+      company_id: getVendorCompanyId() || s.company_id,
+      schedule_name: s.schedule_name || "",
+      start_time: s.start_time,
+      end_time: s.end_time,
+    };
     setEditing(s);
     setForm(nextForm);
     setInitialForm(nextForm);
@@ -113,15 +118,16 @@ const Schedules = () => {
             <thead className="bg-white/10 text-purple-200 uppercase text-xs">
               <tr>
                 <th className="px-6 py-4 w-16">#</th>
+                <th className="px-6 py-4">Schedule Name</th>
                 <th className="px-6 py-4">Start Time</th>
                 <th className="px-6 py-4">End Time</th>
-                <th className="px-6 py-4 w-28">Actions</th>
+                <th className="px-6 py-4 w-32">Actions</th>
               </tr>
             </thead>
             <tbody>
               {schedules.length === 0 ? (
                 <tr>
-                  <td colSpan={4} className="text-center py-8 text-purple-300">
+                  <td colSpan={5} className="text-center py-8 text-purple-300">
                     No schedules found
                   </td>
                 </tr>
@@ -129,6 +135,7 @@ const Schedules = () => {
                 paginatedItems.map((s, i) => (
                   <tr key={s.id} className="border-t border-white/10 hover:bg-white/5 transition-colors">
                     <td className="px-6 py-4">{startItem + i}</td>
+                    <td className="px-6 py-4 font-medium">{s.schedule_name || "-"}</td>
                     <td className="px-6 py-4">{s.start_time}</td>
                     <td className="px-6 py-4">{s.end_time}</td>
                     <td className="px-6 py-4">
@@ -180,7 +187,15 @@ const Schedules = () => {
         isSubmitting={isSubmitDisabled}
         size="4xl"
       >
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <Input
+            label="Schedule Name"
+            name="schedule_name"
+            placeholder="Morning Shift"
+            value={form.schedule_name}
+            onChange={handleChange}
+            required
+          />
           <Input label="Start Time" name="start_time" type="time" value={form.start_time} onChange={handleChange} required />
           <Input label="End Time" name="end_time" type="time" value={form.end_time} onChange={handleChange} required />
         </div>
@@ -217,6 +232,9 @@ const Schedules = () => {
           </div>
           <p className="text-gray-600 text-lg">Are you sure you want to delete schedule:</p>
           <p className="text-2xl font-bold text-gray-900 mt-2">
+            {deletingSchedule?.schedule_name || ""}
+          </p>
+          <p className="text-sm text-gray-500 mt-2">
             {deletingSchedule ? `${deletingSchedule.start_time} - ${deletingSchedule.end_time}` : ""}
           </p>
         </div>

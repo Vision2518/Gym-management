@@ -418,6 +418,7 @@ export const getDashboardStats = async (req, res) => {
     res.status(500).json({ message: "Unable to load dashboard data right now. Please try again later." });
   }
 };
+
 export const verifyToken = async (req, res) => {
   try {
     const token = req.cookies.token;

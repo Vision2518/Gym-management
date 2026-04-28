@@ -339,19 +339,19 @@ export const updateMember = async (req, res, next) => {
 export const addMemberSchedule = async (req, res) => {
   try {
     const company_id = req.vendor?.company_id;
-    const { start_time, end_time } = req.body;
+    const { schedule_name, start_time, end_time } = req.body;
 
-    if (!company_id || !start_time || !end_time) {
+    if (!company_id || !schedule_name || !start_time || !end_time) {
       return res.status(400).json({
         success: false,
-        message: "Start time and end time are required.",
+        message: "Schedule name, start time, and end time are required.",
       });
     }
 
     const [result] = await db.query(
-      `INSERT INTO member_schedules (company_id, start_time, end_time)
-       VALUES (?,?, ?)`,
-      [company_id, start_time, end_time],
+      `INSERT INTO member_schedules (company_id, schedule_name, start_time, end_time)
+       VALUES (?,?, ?, ?)`,
+      [company_id, schedule_name, start_time, end_time],
     );
 
     res.status(201).json({
@@ -423,12 +423,12 @@ export const updateSchedule = async (req, res) => {
   try {
     const { id } = req.params; // schedule id from URL
     const company_id = req.vendor?.company_id;
-    const { start_time, end_time } = req.body;
+    const { schedule_name, start_time, end_time } = req.body;
 
-    if (!company_id || !start_time || !end_time) {
+    if (!company_id || !schedule_name || !start_time || !end_time) {
       return res.status(400).json({
         success: false,
-        message: "Start time and end time are required.",
+        message: "Schedule name, start time, and end time are required.",
       });
     }
 
@@ -448,9 +448,9 @@ export const updateSchedule = async (req, res) => {
     // Update schedule
     await db.query(
       `UPDATE member_schedules 
-       SET company_id = ?, start_time = ?, end_time = ?
+       SET company_id = ?, schedule_name = ?, start_time = ?, end_time = ?
        WHERE id = ?`,
-      [company_id, start_time, end_time, id],
+      [company_id, schedule_name, start_time, end_time, id],
     );
 
     res.status(200).json({
@@ -504,6 +504,7 @@ export const getSchedulesByCompany = async (req, res) => {
         ms.id,
         ms.company_id,
         ms.member_id,
+        ms.schedule_name,
         m.full_name,
         ms.start_time,
         ms.end_time

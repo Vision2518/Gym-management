@@ -504,7 +504,9 @@ const Members = () => {
               <option value="">Select Schedule</option>
               {schedules.map((s) => (
                 <option key={s.id} value={s.id}>
-                  {s.start_time} - {s.end_time}
+                  {s.schedule_name
+                    ? `${s.schedule_name} (${s.start_time} - ${s.end_time})`
+                    : `${s.start_time} - ${s.end_time}`}
                 </option>
               ))}
             </select>
@@ -596,7 +598,9 @@ const Members = () => {
               <p className="text-sm font-medium text-gray-500">Schedule</p>
               <p className="text-base font-semibold text-gray-900">
                 {selectedViewSchedule
-                  ? `${selectedViewSchedule.start_time} - ${selectedViewSchedule.end_time}`
+                  ? selectedViewSchedule.schedule_name
+                    ? `${selectedViewSchedule.schedule_name} (${selectedViewSchedule.start_time} - ${selectedViewSchedule.end_time})`
+                    : `${selectedViewSchedule.start_time} - ${selectedViewSchedule.end_time}`
                   : "-"}
               </p>
             </div>

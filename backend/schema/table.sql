@@ -58,6 +58,7 @@ CREATE TABLE member_schedules (
     id INT AUTO_INCREMENT PRIMARY KEY,
     company_id INT,
     member_id INT,
+    schedule_name VARCHAR(100) NOT NULL,
     start_time TIME,
     end_time TIME,
     FOREIGN KEY (company_id) REFERENCES companies(id),

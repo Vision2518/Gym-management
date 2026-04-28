@@ -37,7 +37,7 @@ export const usePagination = (items, itemsPerPage = 10) => {
     startItem,
     endItem,
     totalItems: items.length,
-    showPagination: true,
+    showPagination: items.length > 0,
   };
 };
 
