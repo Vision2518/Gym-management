@@ -1,6 +1,6 @@
 import { NavLink, useNavigate } from "react-router-dom";
 import { useSignoutMutation } from "../redux/features/authSlice";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { clearUser } from "../redux/features/authState";
 import {
   MdDashboard,
@@ -13,18 +13,41 @@ import {
 } from "react-icons/md";
 
 const navItems = [
-  { label: "Dashboard",  path: "/vendor/dashboard",  icon: <MdDashboard size={20} /> },
-  { label: "Members",    path: "/vendor/members",    icon: <MdPeople size={20} /> },
-  { label: "Plans",      path: "/vendor/plans",      icon: <MdCardMembership size={20} /> },
-  { label: "Schedules",  path: "/vendor/schedules",  icon: <MdSchedule size={20} /> },
-  { label: "Payments",   path: "/vendor/payments",   icon: <MdPayment size={20} /> },
-  { label: "Profile",    path: "/vendor/profile",    icon: <MdPerson size={20} /> },
+  {
+    label: "Dashboard",
+    path: "/vendor/dashboard",
+    icon: <MdDashboard size={20} />,
+  },
+  { label: "Members", path: "/vendor/members", icon: <MdPeople size={20} /> },
+  {
+    label: "Plans",
+    path: "/vendor/plans",
+    icon: <MdCardMembership size={20} />,
+  },
+  {
+    label: "Schedules",
+    path: "/vendor/schedules",
+    icon: <MdSchedule size={20} />,
+  },
+  {
+    label: "Payments",
+    path: "/vendor/payments",
+    icon: <MdPayment size={20} />,
+  },
+  { label: "Profile", path: "/vendor/profile", icon: <MdPerson size={20} /> },
 ];
 
 const VendorSidebar = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const [signout] = useSignoutMutation();
+
+  const vendorEmail = useSelector(
+    (state) => state.authState?.user?.email || state.auth?.user?.email || "",
+  );
+  const vendorUsername = localStorage.getItem("vendorUsername") || "";
+
+  const displayName = vendorEmail || vendorUsername || "Loading...";
 
   const handleSignout = async () => {
     await signout();
@@ -36,9 +59,15 @@ const VendorSidebar = () => {
 
   return (
     <aside className="w-64 min-h-screen bg-slate-950 text-white flex flex-col">
-      <div className="p-8 text-2xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-purple-500 to-pink-500">
-        Vendor Panel
+      <div className="p-8">
+        <div
+          className="text-xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-purple-500 to-pink-500 truncate"
+          title={displayName}
+        >
+          {displayName}
+        </div>
       </div>
+
       <nav className="flex-1 p-4 space-y-1">
         {navItems.map((item) => (
           <NavLink
@@ -57,6 +86,7 @@ const VendorSidebar = () => {
           </NavLink>
         ))}
       </nav>
+
       <div className="p-4">
         <button
           onClick={handleSignout}
