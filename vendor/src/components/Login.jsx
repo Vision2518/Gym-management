@@ -1,337 +1,622 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { toast } from "react-toastify";
-import logo from "../assets/hero.png";
-import {
-  useLoginMutation,
-  useVendorLoginMutation,
-} from "../redux/features/authSlice";
+import { useVendorLoginMutation } from "../redux/features/authSlice";
 import { useDispatch } from "react-redux";
 import { setUser } from "../redux/features/authState";
+import { toast } from "react-toastify";
 import { getErrorMessage } from "../utils/toastMessage";
-import { MdEmail, MdLock, MdVisibility, MdVisibilityOff } from "react-icons/md";
 
-const vendorDashboardUrl = import.meta.env.VITE_VENDOR_DASHBOARD_URL || "";
+const GymPanel = () => (
+  <div style={panelStyles.wrap}>
+    <div style={panelStyles.overlay} />
+    <svg
+      style={panelStyles.texture}
+      width="100%"
+      height="100%"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <defs>
+        <pattern
+          id="diag"
+          width="24"
+          height="24"
+          patternUnits="userSpaceOnUse"
+          patternTransform="rotate(45)"
+        >
+          <line
+            x1="0"
+            y1="0"
+            x2="0"
+            y2="24"
+            stroke="rgba(255,255,255,0.04)"
+            strokeWidth="1.5"
+          />
+        </pattern>
+      </defs>
+      <rect width="100%" height="100%" fill="url(#diag)" />
+    </svg>
+    <div style={panelStyles.glow} />
 
-const GymVendorLogin = ({ role = "admin" }) => {
-  const isAdmin = role === "admin";
-  const navigate = useNavigate();
-  const [formData, setFormData] = useState({ email: "", password: "" });
+    <div style={panelStyles.content}>
+      <div style={panelStyles.brand}>
+        <div style={panelStyles.logoMark}>
+          <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+            <path
+              d="M4 14H7M21 14H24M7 14V10C7 8.9 7.9 8 9 8H10C11.1 8 12 8.9 12 10V18C12 19.1 11.1 20 10 20H9C7.9 20 7 19.1 7 18V14ZM21 14V10C21 8.9 20.1 8 19 8H18C16.9 8 16 8.9 16 10V18C16 19.1 16.9 20 18 20H19C20.1 20 21 19.1 21 18V14ZM12 14H16"
+              stroke="white"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        </div>
+        <span style={panelStyles.brandName}>IronVault</span>
+      </div>
+
+      <div style={panelStyles.hero}>
+        <div style={panelStyles.tag}>VENDOR PORTAL</div>
+        <h2 style={panelStyles.headline}>
+          Manage Your
+          <br />
+          <span style={panelStyles.headlineAccent}>Fitness Empire</span>
+        </h2>
+        <p style={panelStyles.heroSub}>
+          Track memberships, manage schedules, and grow your gym business — all
+          in one powerful dashboard.
+        </p>
+      </div>
+
+      <div style={panelStyles.stats}>
+        {[
+          { value: "2.4k", label: "Active Members" },
+          { value: "98%", label: "Retention Rate" },
+          { value: "15+", label: "Class Types" },
+        ].map((s) => (
+          <div key={s.label} style={panelStyles.stat}>
+            <span style={panelStyles.statValue}>{s.value}</span>
+            <span style={panelStyles.statLabel}>{s.label}</span>
+          </div>
+        ))}
+      </div>
+
+      <div style={panelStyles.pills}>
+        {[
+          "Member Analytics",
+          "Schedule Manager",
+          "Revenue Insights",
+          "Staff Tools",
+        ].map((f) => (
+          <span key={f} style={panelStyles.pill}>
+            {f}
+          </span>
+        ))}
+      </div>
+    </div>
+
+    <div style={panelStyles.bottomFade} />
+  </div>
+);
+
+const Login = () => {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [rememberMe, setRememberMe] = useState(false);
-  
+  const [login, { isLoading }] = useVendorLoginMutation();
   const dispatch = useDispatch();
-  const [login] = useLoginMutation();
-  const [vendorLogin] = useVendorLoginMutation();
-
-  const handleClick = (e) => {
-    const { id, value } = e.target;
-    setFormData((prev) => ({ ...prev, [id]: value }));
-  };
+  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setIsLoading(true);
     try {
-      const fn = isAdmin ? login : vendorLogin;
-      const payload = await fn(formData).unwrap();
-      const token = payload?.token;
-      
-      if (!token) {
-        toast.error("Login failed. No access token was returned.");
-        return;
-      }
-
-      if (rememberMe) {
-        localStorage.setItem("authToken", token);
-        localStorage.setItem("vendorUsername", formData.email);
-      } else {
-        sessionStorage.setItem("authToken", token);
-      }
-      
-      const decoded = JSON.parse(atob(token.split(".")[1]));
-      dispatch(setUser({ email: decoded.email, role: decoded.role }));
-
-      if (decoded.role === "super_admin") navigate("/admin/dashboard");
-      else if (decoded.role === "vendor") {
-        if (vendorDashboardUrl) {
-          window.location.href = vendorDashboardUrl;
-        } else {
-          navigate("/vendor/dashboard");
-        }
-      } else {
-        toast.error("Login failed. Unknown user role.");
+      const result = await login({ email, password }).unwrap();
+      if (result.token) {
+        localStorage.setItem("authToken", result.token);
+        localStorage.setItem("vendorUsername", result.vendor?.username || "");
+        const decoded = JSON.parse(atob(result.token.split(".")[1]));
+        dispatch(
+          setUser({
+            email: decoded.email,
+            role: decoded.role,
+            username: result.vendor?.username,
+          }),
+        );
+        toast.success("Login successful!");
+        navigate("/vendor/dashboard");
       }
     } catch (err) {
       toast.error(
-        getErrorMessage(err, "Login failed. Please check your email and password.")
+        getErrorMessage(
+          err,
+          "Login failed. Please check your email and password.",
+        ),
       );
-    } finally {
-      setIsLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#0a0a0f] relative overflow-hidden p-4">
-      {/* ✨ Animated Background */}
-      <div className="absolute inset-0">
-        <div className="absolute inset-0 bg-gradient-to-br from-red-900/20 via-transparent to-blue-900/20 animate-pulse" />
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-red-600/10 rounded-full blur-3xl animate-blob" />
-        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-blue-600/10 rounded-full blur-3xl animate-blob animation-delay-2000" />
-        <div className="absolute top-1/2 left-1/2 w-64 h-64 bg-purple-600/10 rounded-full blur-3xl animate-blob animation-delay-4000" />
-      </div>
+    <div style={styles.page}>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=DM+Sans:wght@400;500;600&display=swap');
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes fadeUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
+        @keyframes slideIn { from { opacity:0; transform:translateX(-30px); } to { opacity:1; transform:translateX(0); } }
+        @keyframes pulse-glow { 0%,100%{opacity:0.4} 50%{opacity:0.75} }
+        .__panel { animation: slideIn 0.7s cubic-bezier(.22,1,.36,1) both; }
+        .__form-side { animation: fadeUp 0.7s 0.15s cubic-bezier(.22,1,.36,1) both; opacity:0; }
+        .__input::placeholder { color: rgba(100,116,139,0.5); }
+        .__input:focus {
+          border-color: rgba(251,146,60,0.6) !important;
+          background: rgba(251,146,60,0.04) !important;
+          box-shadow: 0 0 0 3px rgba(251,146,60,0.12) !important;
+          outline: none;
+        }
+        .__submit:not(:disabled):hover {
+          transform: translateY(-2px);
+          box-shadow: 0 10px 32px rgba(234,88,12,0.5) !important;
+        }
+        .__submit:not(:disabled):active { transform: translateY(0); }
+        .__eye:hover { color: rgba(251,146,60,0.85) !important; }
+        @media (max-width: 768px) {
+          .__split { flex-direction: column !important; }
+          .__gym-panel { display: none !important; }
+        }
+      `}</style>
 
-      {/* 🎴 Login Card */}
-      <div className="relative max-w-5xl w-full bg-white/5 backdrop-blur-2xl rounded-3xl shadow-2xl overflow-hidden border border-white/10 flex flex-col md:flex-row animate-fade-in-up">
-        
-        {/* 🎨 Left Side: Visual/Branding */}
-        <div className="md:w-1/2 bg-gradient-to-br from-red-600 to-red-800 p-8 md:p-12 text-white flex flex-col justify-center items-center relative overflow-hidden group">
-          {/* Animated overlay */}
-          <div className="absolute inset-0 opacity-20 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-white/40 via-transparent to-transparent animate-pulse-slow" />
-          
-          {/* Floating elements */}
-          <div className="absolute -top-10 -right-10 w-32 h-32 bg-white/10 rounded-full blur-2xl group-hover:scale-110 transition-transform duration-700" />
-          <div className="absolute -bottom-8 -left-8 w-24 h-24 bg-white/10 rounded-full blur-xl group-hover:scale-110 transition-transform duration-700 delay-100" />
-          
-          <div className="relative z-10 text-center">
-            <div className="mb-6 transform hover:scale-105 transition-transform duration-300">
-              <img src={logo} alt="Gym Logo" className="w-40 h-40 object-contain drop-shadow-2xl" />
-            </div>
-            <h1 className="text-3xl md:text-4xl font-extrabold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-white to-red-100">
-              {isAdmin ? "Admin Portal" : "Vendor Hub"}
-            </h1>
-            <p className="text-red-100/90 text-lg leading-relaxed max-w-xs mx-auto">
-              Secure access to your {isAdmin ? "administrative" : "vendor"} dashboard. 
-              Manage, monitor, and grow your fitness business.
-            </p>
-            
-            {/* Feature badges */}
-            <div className="mt-8 flex flex-wrap justify-center gap-2">
-              {["🔐 Secure", "⚡ Fast", "📱 Responsive"].map((badge, i) => (
-                <span 
-                  key={i}
-                  className="px-3 py-1 bg-white/10 backdrop-blur-sm rounded-full text-sm font-medium text-white/90 border border-white/20 hover:bg-white/20 transition-colors cursor-default"
-                >
-                  {badge}
-                </span>
-              ))}
-            </div>
-          </div>
+      <div className="__split" style={styles.split}>
+        <div className="__gym-panel __panel" style={styles.gymPanel}>
+          <GymPanel />
         </div>
 
-        {/* 📝 Right Side: Form */}
-        <div className="md:w-1/2 p-6 md:p-10 bg-white/5">
-          <div className="max-w-md mx-auto">
-            <div className="text-center mb-8">
-              <h2 className="text-2xl md:text-3xl font-bold text-white mb-2">
-                Welcome Back! 👋
-              </h2>
-              <p className="text-gray-400">
-                Sign in to continue to your {isAdmin ? "admin" : "vendor"} dashboard
+        <div className="__form-side" style={styles.formSide}>
+          <div style={styles.formBox}>
+            <div style={styles.formHeader}>
+              <div style={styles.welcomeTag}>WELCOME BACK</div>
+              <h1 style={styles.formHeading}>Vendor Sign In</h1>
+              <p style={styles.formSub}>
+                Enter your credentials to access the dashboard
               </p>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-5">
-              {/* Email Field */}
-              <div className="group">
-                <label className="block text-sm font-medium text-gray-300 mb-2 ml-1">
-                  {isAdmin ? "Admin Email" : "Vendor Email"}
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                    <MdEmail className="h-5 w-5 text-gray-500 group-focus-within:text-red-400 transition-colors" />
-                  </div>
+            <form onSubmit={handleSubmit} style={styles.form}>
+              <div style={styles.field}>
+                <label style={styles.label}>Email Address</label>
+                <div style={{ position: "relative" }}>
+                  <span style={styles.iconLeft}>
+                    <svg
+                      width="15"
+                      height="15"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <rect x="2" y="4" width="20" height="16" rx="2" />
+                      <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
+                    </svg>
+                  </span>
                   <input
-                    id="email"
+                    className="__input"
                     type="email"
-                    className="w-full pl-11 pr-4 py-3.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-500 
-                             focus:ring-2 focus:ring-red-500/30 focus:border-red-500 outline-none transition-all duration-200
-                             hover:border-white/20 hover:bg-white/10"
-                    placeholder={isAdmin ? "admin@gym.com" : "vendor@gym.com"}
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="you@example.com"
                     required
-                    value={formData.email}
-                    onChange={handleClick}
-                    autoComplete="email"
+                    style={styles.input}
                   />
                 </div>
               </div>
 
-              {/* Password Field */}
-              <div className="group">
-                <label className="block text-sm font-medium text-gray-300 mb-2 ml-1">
-                  Password
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                    <MdLock className="h-5 w-5 text-gray-500 group-focus-within:text-red-400 transition-colors" />
-                  </div>
+              <div style={styles.field}>
+                <label style={styles.label}>Password</label>
+                <div style={{ position: "relative" }}>
+                  <span style={styles.iconLeft}>
+                    <svg
+                      width="15"
+                      height="15"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <rect x="3" y="11" width="18" height="11" rx="2" />
+                      <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                    </svg>
+                  </span>
                   <input
-                    id="password"
+                    className="__input"
                     type={showPassword ? "text" : "password"}
-                    className="w-full pl-11 pr-12 py-3.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-500 
-                             focus:ring-2 focus:ring-red-500/30 focus:border-red-500 outline-none transition-all duration-200
-                             hover:border-white/20 hover:bg-white/10"
-                    placeholder="••••••••"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Enter your password"
                     required
-                    value={formData.password}
-                    onChange={handleClick}
-                    autoComplete="current-password"
+                    style={{ ...styles.input, paddingRight: "3rem" }}
                   />
                   <button
                     type="button"
-                    className="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-500 hover:text-white transition-colors"
+                    className="__eye"
                     onClick={() => setShowPassword(!showPassword)}
-                    aria-label={showPassword ? "Hide password" : "Show password"}
+                    style={styles.eyeBtn}
+                    tabIndex={-1}
                   >
                     {showPassword ? (
-                      <MdVisibilityOff className="h-5 w-5" />
+                      <svg
+                        width="15"
+                        height="15"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24" />
+                        <path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68" />
+                        <path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61" />
+                        <line x1="2" y1="2" x2="22" y2="22" />
+                      </svg>
                     ) : (
-                      <MdVisibility className="h-5 w-5" />
+                      <svg
+                        width="15"
+                        height="15"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
+                        <circle cx="12" cy="12" r="3" />
+                      </svg>
                     )}
                   </button>
                 </div>
               </div>
 
-              {/* Remember & Forgot */}
-              <div className="flex items-center justify-between">
-                <label className="flex items-center gap-2 cursor-pointer group">
-                  <div className="relative">
-                    <input
-                      type="checkbox"
-                      className="sr-only peer"
-                      checked={rememberMe}
-                      onChange={(e) => setRememberMe(e.target.checked)}
-                    />
-                    <div className="w-5 h-5 border-2 border-white/20 rounded-md peer-checked:bg-red-600 peer-checked:border-red-600 
-                                  transition-all duration-200 flex items-center justify-center">
-                      {rememberMe && (
-                        <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                        </svg>
-                      )}
-                    </div>
-                  </div>
-                  <span className="text-sm text-gray-400 group-hover:text-gray-300 transition-colors">
-                    Remember me
-                  </span>
-                </label>
-                <a
-                  href="#"
-                  className="text-sm text-red-400 hover:text-red-300 font-medium transition-colors hover:underline"
-                  onClick={(e) => { e.preventDefault(); toast.info("Password reset feature coming soon!"); }}
-                >
-                  Forgot password?
-                </a>
-              </div>
-
-              {/* Sign In Button */}
               <button
                 type="submit"
+                className="__submit"
                 disabled={isLoading}
-                className="w-full bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 
-                         text-white font-semibold py-4 rounded-xl shadow-lg shadow-red-900/30 
-                         hover:shadow-red-900/50 hover:scale-[1.02] active:scale-[0.98] 
-                         transition-all duration-200 disabled:opacity-70 disabled:cursor-not-allowed disabled:hover:scale-100
-                         flex items-center justify-center gap-2"
+                style={{
+                  ...styles.submit,
+                  ...(isLoading
+                    ? { opacity: 0.55, cursor: "not-allowed" }
+                    : {}),
+                }}
               >
                 {isLoading ? (
-                  <>
-                    <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    Signing in...
-                  </>
+                  <span
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "0.6rem",
+                    }}
+                  >
+                    <span style={styles.spinner} />
+                    Signing in…
+                  </span>
                 ) : (
-                  <>
-                    Sign In
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                  <span
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "0.5rem",
+                    }}
+                  >
+                    Access Dashboard
+                    <svg
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M5 12h14" />
+                      <path d="m12 5 7 7-7 7" />
                     </svg>
-                  </>
+                  </span>
                 )}
               </button>
             </form>
 
-            {/* Divider */}
-            <div className="my-6 flex items-center">
-              <div className="flex-1 border-t border-white/10"></div>
-              <span className="px-4 text-sm text-gray-500">or continue with</span>
-              <div className="flex-1 border-t border-white/10"></div>
-            </div>
-
-            {/* Social Login (Optional - styled but non-functional) */}
-            <div className="grid grid-cols-2 gap-4">
-              {["Google", "GitHub"].map((provider) => (
-                <button
-                  key={provider}
-                  type="button"
-                  className="flex items-center justify-center gap-2 py-3 px-4 bg-white/5 hover:bg-white/10 
-                           border border-white/10 rounded-xl text-gray-300 font-medium 
-                           transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
-                  onClick={() => toast.info(`${provider} login coming soon!`)}
-                >
-                  {provider === "Google" ? (
-                    <svg className="w-5 h-5" viewBox="0 0 24 24">
-                      <path fill="#EA4335" d="M5.266 9.765A7.077 7.077 0 0 1 12 4.909c1.69 0 3.218.6 4.418 1.582L19.91 3C17.782 1.145 15.055 0 12 0 7.27 0 3.198 2.698 1.24 6.65l4.026 3.115Z"/>
-                      <path fill="#34A853" d="M16.04 18.013c-1.09.703-2.474 1.078-4.04 1.078a7.077 7.077 0 0 1-6.723-4.823l-4.04 3.067A11.965 11.965 0 0 0 12 24c2.933 0 5.735-1.043 7.834-3l-3.793-2.987Z"/>
-                      <path fill="#4A90E2" d="M19.834 21c2.195-2.048 3.62-5.096 3.62-9 0-.71-.109-1.473-.272-2.182H12v4.637h6.436c-.317 1.559-1.17 2.766-2.395 3.558L19.834 21Z"/>
-                      <path fill="#FBBC05" d="M5.277 14.332A7.12 7.12 0 0 1 4.909 12c0-.782.125-1.533.357-2.235L1.24 6.65A11.934 11.934 0 0 0 0 12c0 1.92.445 3.73 1.237 5.335l4.04-3.003Z"/>
-                    </svg>
-                  ) : (
-                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
-                    </svg>
-                  )}
-                  {provider}
-                </button>
-              ))}
-            </div>
-
-            {/* Footer */}
-            <p className="mt-8 text-center text-sm text-gray-500">
-              By signing in, you agree to our{" "}
-              <a href="#" className="text-red-400 hover:text-red-300 hover:underline">Terms</a>
-              {" "}&{" "}
-              <a href="#" className="text-red-400 hover:text-red-300 hover:underline">Privacy Policy</a>
+            <p style={styles.footerNote}>
+              Don't have access?{" "}
+              <span style={styles.footerLink}>Contact your administrator</span>
             </p>
           </div>
+
+          <div style={styles.bottomBar} />
         </div>
       </div>
-
-      {/* ✨ CSS Animations (add to your global CSS or use a style tag) */}
-      <style>{`
-        @keyframes blob {
-          0%, 100% { transform: translate(0, 0) scale(1); }
-          25% { transform: translate(20px, -10px) scale(1.1); }
-          50% { transform: translate(10px, 20px) scale(0.95); }
-          75% { transform: translate(-15px, 10px) scale(1.05); }
-        }
-        .animate-blob {
-          animation: blob 12s infinite ease-in-out;
-        }
-        .animation-delay-2000 { animation-delay: 2s; }
-        .animation-delay-4000 { animation-delay: 4s; }
-        
-        @keyframes fade-in-up {
-          from { opacity: 0; transform: translateY(20px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        .animate-fade-in-up {
-          animation: fade-in-up 0.5s ease-out forwards;
-        }
-        
-        @keyframes pulse-slow {
-          0%, 100% { opacity: 0.2; }
-          50% { opacity: 0.3; }
-        }
-        .animate-pulse-slow {
-          animation: pulse-slow 4s ease-in-out infinite;
-        }
-      `}</style>
     </div>
   );
 };
 
-export default GymVendorLogin;
+const panelStyles = {
+  wrap: {
+    position: "relative",
+    width: "100%",
+    height: "100%",
+    background: "linear-gradient(160deg,#0a0a0a 0%,#1a0a00 40%,#0f0a1a 100%)",
+    overflow: "hidden",
+    display: "flex",
+    flexDirection: "column",
+  },
+  overlay: {
+    position: "absolute",
+    inset: 0,
+    background:
+      "linear-gradient(180deg,rgba(0,0,0,0.2) 0%,rgba(0,0,0,0.65) 100%)",
+    zIndex: 1,
+  },
+  texture: { position: "absolute", inset: 0, zIndex: 2 },
+  glow: {
+    position: "absolute",
+    top: "20%",
+    left: "-20%",
+    width: "80%",
+    height: "60%",
+    borderRadius: "50%",
+    background:
+      "radial-gradient(ellipse,rgba(234,88,12,0.2) 0%,transparent 70%)",
+    zIndex: 3,
+    animation: "pulse-glow 4s ease-in-out infinite",
+  },
+  content: {
+    position: "relative",
+    zIndex: 10,
+    display: "flex",
+    flexDirection: "column",
+    height: "100%",
+    padding: "2.5rem",
+    justifyContent: "space-between",
+  },
+  brand: { display: "flex", alignItems: "center", gap: "0.6rem" },
+  logoMark: {
+    width: "42px",
+    height: "42px",
+    borderRadius: "12px",
+    background: "linear-gradient(135deg,#ea580c,#dc2626)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    boxShadow: "0 4px 16px rgba(234,88,12,0.4)",
+  },
+  brandName: {
+    fontSize: "1.2rem",
+    fontWeight: "700",
+    color: "#ffffff",
+    letterSpacing: "0.08em",
+    fontFamily: "'Barlow Condensed',sans-serif",
+    textTransform: "uppercase",
+  },
+  hero: {
+    flex: 1,
+    display: "flex",
+    flexDirection: "column",
+    justifyContent: "center",
+    paddingTop: "2rem",
+  },
+  tag: {
+    display: "inline-block",
+    fontSize: "0.65rem",
+    fontWeight: "600",
+    letterSpacing: "0.18em",
+    color: "#fb923c",
+    border: "1px solid rgba(251,146,60,0.4)",
+    padding: "4px 12px",
+    borderRadius: "4px",
+    marginBottom: "1.2rem",
+    width: "fit-content",
+    fontFamily: "'DM Sans',sans-serif",
+  },
+  headline: {
+    fontSize: "clamp(2.2rem,3.5vw,3rem)",
+    fontWeight: "800",
+    color: "#ffffff",
+    lineHeight: 1.05,
+    letterSpacing: "-0.02em",
+    margin: "0 0 1.2rem",
+    fontFamily: "'Barlow Condensed',sans-serif",
+    textTransform: "uppercase",
+  },
+  headlineAccent: {
+    background: "linear-gradient(90deg,#fb923c,#f97316)",
+    WebkitBackgroundClip: "text",
+    WebkitTextFillColor: "transparent",
+    backgroundClip: "text",
+  },
+  heroSub: {
+    fontSize: "0.875rem",
+    color: "rgba(255,255,255,0.45)",
+    lineHeight: 1.7,
+    maxWidth: "300px",
+    margin: 0,
+    fontFamily: "'DM Sans',sans-serif",
+  },
+  stats: { display: "flex", gap: "1.5rem", marginBottom: "1.5rem" },
+  stat: { display: "flex", flexDirection: "column", gap: "2px" },
+  statValue: {
+    fontSize: "1.6rem",
+    fontWeight: "800",
+    color: "#fb923c",
+    lineHeight: 1,
+    fontFamily: "'Barlow Condensed',sans-serif",
+  },
+  statLabel: {
+    fontSize: "0.68rem",
+    color: "rgba(255,255,255,0.38)",
+    fontFamily: "'DM Sans',sans-serif",
+    letterSpacing: "0.04em",
+  },
+  pills: { display: "flex", flexWrap: "wrap", gap: "0.5rem" },
+  pill: {
+    fontSize: "0.7rem",
+    fontWeight: "500",
+    color: "rgba(255,255,255,0.5)",
+    background: "rgba(255,255,255,0.06)",
+    border: "1px solid rgba(255,255,255,0.1)",
+    padding: "5px 12px",
+    borderRadius: "100px",
+    fontFamily: "'DM Sans',sans-serif",
+  },
+  bottomFade: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: "100px",
+    background: "linear-gradient(0deg,rgba(0,0,0,0.7) 0%,transparent 100%)",
+    zIndex: 5,
+  },
+};
+
+const styles = {
+  page: {
+    minHeight: "100vh",
+    display: "flex",
+    background: "#0c0c0c",
+    fontFamily: "'DM Sans',system-ui,sans-serif",
+  },
+  split: { display: "flex", width: "100%", minHeight: "100vh" },
+  gymPanel: { flex: "0 0 50%", maxWidth: "50%", position: "relative" },
+  formSide: {
+    flex: 1,
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    justifyContent: "center",
+    background: "#111111",
+    padding: "3rem 2rem",
+    position: "relative",
+    minHeight: "100vh",
+  },
+  formBox: { width: "100%", maxWidth: "380px" },
+  formHeader: { marginBottom: "2.5rem" },
+  welcomeTag: {
+    fontSize: "0.65rem",
+    fontWeight: "600",
+    letterSpacing: "0.18em",
+    color: "#fb923c",
+    marginBottom: "0.75rem",
+  },
+  formHeading: {
+    fontSize: "2rem",
+    fontWeight: "800",
+    color: "#ffffff",
+    margin: "0 0 0.5rem",
+    letterSpacing: "-0.03em",
+    lineHeight: 1.1,
+    fontFamily: "'Barlow Condensed',sans-serif",
+    textTransform: "uppercase",
+  },
+  formSub: {
+    fontSize: "0.85rem",
+    color: "rgba(255,255,255,0.3)",
+    margin: 0,
+    lineHeight: 1.6,
+  },
+  form: { display: "flex", flexDirection: "column", gap: "1.25rem" },
+  field: { display: "flex", flexDirection: "column", gap: "0.45rem" },
+  label: {
+    fontSize: "0.72rem",
+    fontWeight: "600",
+    color: "rgba(255,255,255,0.38)",
+    letterSpacing: "0.1em",
+    textTransform: "uppercase",
+  },
+  iconLeft: {
+    position: "absolute",
+    left: "1rem",
+    top: "50%",
+    transform: "translateY(-50%)",
+    color: "rgba(255,255,255,0.22)",
+    display: "flex",
+    alignItems: "center",
+    pointerEvents: "none",
+  },
+  input: {
+    width: "100%",
+    boxSizing: "border-box",
+    padding: "0.875rem 1rem 0.875rem 2.75rem",
+    borderRadius: "10px",
+    border: "1px solid rgba(255,255,255,0.08)",
+    background: "rgba(255,255,255,0.04)",
+    color: "#ffffff",
+    fontSize: "0.9rem",
+    outline: "none",
+    transition: "all 0.2s",
+    fontFamily: "'DM Sans',sans-serif",
+  },
+  eyeBtn: {
+    position: "absolute",
+    right: "1rem",
+    top: "50%",
+    transform: "translateY(-50%)",
+    background: "none",
+    border: "none",
+    cursor: "pointer",
+    color: "rgba(255,255,255,0.22)",
+    padding: 0,
+    display: "flex",
+    alignItems: "center",
+    transition: "color 0.2s",
+  },
+  submit: {
+    marginTop: "0.5rem",
+    width: "100%",
+    padding: "1rem",
+    borderRadius: "10px",
+    border: "none",
+    background: "linear-gradient(135deg,#ea580c 0%,#dc2626 100%)",
+    color: "#ffffff",
+    fontSize: "0.9rem",
+    fontWeight: "600",
+    cursor: "pointer",
+    transition: "transform 0.2s, box-shadow 0.2s",
+    boxShadow: "0 4px 20px rgba(234,88,12,0.35)",
+    fontFamily: "'DM Sans',sans-serif",
+    letterSpacing: "0.02em",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  spinner: {
+    display: "inline-block",
+    width: "15px",
+    height: "15px",
+    border: "2px solid rgba(255,255,255,0.3)",
+    borderTopColor: "#fff",
+    borderRadius: "50%",
+    animation: "spin 0.7s linear infinite",
+    flexShrink: 0,
+  },
+  footerNote: {
+    marginTop: "2rem",
+    textAlign: "center",
+    fontSize: "0.8rem",
+    color: "rgba(255,255,255,0.22)",
+  },
+  footerLink: {
+    color: "rgba(251,146,60,0.65)",
+    fontWeight: "500",
+    cursor: "default",
+  },
+  bottomBar: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: "3px",
+    background: "linear-gradient(90deg,#ea580c,#dc2626,#ea580c)",
+  },
+};
+
+export default Login;
